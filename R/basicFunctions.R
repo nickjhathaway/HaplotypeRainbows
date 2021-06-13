@@ -108,8 +108,8 @@ genRainbowHapPlotObjActualFracLogColor <-function(prepData, sampleCol = s_Sample
                           "{{sampleCol}}" = {{sampleCol}},
                           "{{popUIDCol}}" = {{popUIDCol}},
                           "{{targetCol}}"= {{targetCol}},
-                          "{{relAbundCol}}" = {{relAbundCol}},
-                          pop), 
+                          "{{relAbundCol}}" = {{relAbundCol}}
+                          ), 
                       color = "black") + 
             scale_fill_gradientn(colours = colors) + 
             #scale_y_continuous(breaks = 1:length(samps), labels = samps) + 
