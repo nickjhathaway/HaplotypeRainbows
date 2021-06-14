@@ -112,7 +112,7 @@ genRainbowHapPlotObjActualFracLogColor <-function(prepData, sampleCol = s_Sample
                           ), 
                       color = "black") + 
             scale_fill_gradientn(colours = colors) + 
-            #scale_y_continuous(breaks = 1:length(samps), labels = samps) + 
+            #scale_y_continuous(breaks = 1:length(prepData[,"{{sampleCol}}"]), labels = prepData[,"{{sampleCol}}"]) + 
             sofonias_theme + 
             theme(axis.text.x = element_blank()) + 
             guides(fill = F))
