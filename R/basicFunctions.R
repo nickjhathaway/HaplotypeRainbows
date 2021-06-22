@@ -99,6 +99,11 @@ genRainbowHapPlotObjActualFracLogColor <-function(prepData, sampleCol = s_Sample
     theme(axis.text.x = element_text(size=12)) +
     theme(legend.position = "bottom") + 
     theme(plot.title = element_text(hjust = 0.5))
+  sampleNamesDf = prepData %>% 
+    group_by() %>% 
+    select({{sampleCol}}) %>% 
+    unique() %>% 
+    arrange({{sampleCol}})
   return (ggplot(prepData) + 
             geom_rect(aes(xmin = as.numeric({{targetCol}}) -0.5,
                           xmax = as.numeric({{targetCol}}) +0.5,
@@ -112,7 +117,7 @@ genRainbowHapPlotObjActualFracLogColor <-function(prepData, sampleCol = s_Sample
                           ), 
                       color = "black") + 
             scale_fill_gradientn(colours = colors) + 
-            #scale_y_continuous(breaks = 1:length(prepData[,"{{sampleCol}}"]), labels = prepData[,"{{sampleCol}}"]) + 
+            scale_y_continuous(breaks = 1:length(sampleNamesDf[[1]]), labels = sampleNamesDf[[1]] ) + 
             sofonias_theme + 
             theme(axis.text.x = element_blank()) + 
             guides(fill = F))
