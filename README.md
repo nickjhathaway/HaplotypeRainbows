@@ -1,5 +1,7 @@
 # Haplotype Rainbow
 
+version v1.0.0
+
 This is a collection of tools in R to create haplotype "rainbows" with a myriad input as opposed to SNP barcodes which only have binary input. 
 
 # Install  
