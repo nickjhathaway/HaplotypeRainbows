@@ -38,6 +38,22 @@ But you can specify column names when using the functions
 ## Prep
 There are two main steps for creating the haplotypes, first is to process the input data to create new data table to create the figures from. The library relies heavily on the [tidyverse](https://www.tidyverse.org/) library.  
 
+
 ```r
+library(rainbowHaplotypes)
+
+# load example data 
+data("pfisolateExample") 
+
+#prep data 
+pfIsosHeomeV1_prep = prepForRainbow(pfIsosHeomeV1)
+ 
+#prep data when columns have other than default names 
+
+pfIsosHeomeV1_otherName_prep = prepForRainbow(pfIsosHeomeV1_otherName,
+                                              sampleCol = Sample, 
+                                              targetCol = loci, 
+                                              popUIDCol = ID, 
+                                              relAbundCol = freq)
 
 ```
