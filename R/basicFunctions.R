@@ -123,5 +123,9 @@ genRainbowHapPlotObjActualFracLogColor <-function(prepData, sampleCol = s_Sample
             guides(fill = F))
 } 
 
+#' @export
+genRainbowHapPlotObj <-function(prepData, sampleCol = s_Sample, targetCol= p_name, popUIDCol = h_popUID, relAbundCol = c_AveragedFrac, colors = RColorBrewer::brewer.pal(11, "Spectral")){
+  genRainbowHapPlotObjActualFracLogColor(prepData, {{sampleCol}}, {{targetCol}}, {{popUIDCol}}, {{relAbundCol}}, colors)
+}
 
 
