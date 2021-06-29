@@ -78,7 +78,7 @@ This creates a plot where with samples on the y-axis and targets/loci on the x-a
 
 The package was developed so the colors denoting each major haplotype slightly in hue in each column/loci which ends up creating a repeating "rainbow" across (with default period of 11). 
 
-![example]()
+![example](default_example.png)
 
 ### Manipulating plotting  
 
