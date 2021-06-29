@@ -1,7 +1,7 @@
 Package: rainbowHaplotypes
 Title: Cretes Rainbow Haplotypes
 Version: 1.0.0.0
-Authors@R: 
+Authors@R:
     person(given = "Nicholas",
            family = "Hathaway",
            role = c("aut", "cre"),
@@ -13,5 +13,5 @@ Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
-Imports:
+Depends:
 	tidyverse
