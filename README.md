@@ -78,12 +78,45 @@ This creates a plot where with samples on the y-axis and targets/loci on the x-a
 
 The package was developed so the colors denoting each major haplotype slightly in hue in each column/loci which ends up creating a repeating "rainbow" across (with default period of 11). 
 
-![example](default_example.png)
+![example](images/default_example.png)
 
 ### Manipulating plotting  
 
-By default the plotting 
+#### Sample Order 
+
+By default the samples are sorted by default character sorting but you can manipulate the order of the samples by the change the order of the factor levels of the samples, for example if you want to change the order so that samples sharing similar haplotypes were next to each other
+
 
 ```r
+# select just the major haplotypes and cluster based on the sharing between
+pfIsosHeomeV1_prep_sp = pfIsosHeomeV1_prep %>% 
+  group_by(s_Sample, p_name) %>% 
+  filter(c_AveragedFrac == max(c_AveragedFrac)) %>% 
+  mutate(marker = 1) %>% 
+  group_by() %>% 
+  select(h_popUID, marker, s_Sample) %>%   
+  spread(h_popUID, marker, fill = 0)
+
+pfIsosHeomeV1_prep_sp_mat = as.matrix(pfIsosHeomeV1_prep_sp[,2:ncol(pfIsosHeomeV1_prep_sp)])
+rownames(pfIsosHeomeV1_prep_sp_mat) = pfIsosHeomeV1_prep_sp$s_Sample
+pfIsosHeomeV1_prep_sp_dist = dist(pfIsosHeomeV1_prep_sp_mat)
+pfIsosHeomeV1_prep_sp_dist_hclust = hclust(pfIsosHeomeV1_prep_sp_dist)
+
+#rename the levels so they are in the order of the clustering 
+pfIsosHeomeV1_prep = pfIsosHeomeV1_prep %>% 
+  mutate(s_Sample = factor(s_Sample, levels = rownames(pfIsosHeomeV1_prep_sp_mat)[pfIsosHeomeV1_prep_sp_dist_hclust$order]))
+genRainbowHapPlotObj(pfIsosHeomeV1_prep)
 
 ```
+
+![example](images/sorted_default_example.png)
+
+#### Custom Colors  
+Instead of the using the default colors you can input your own color palette to use 
+
+```r
+genRainbowHapPlotObj(pfIsosHeomeV1_prep, colors = c("#F50300","#FF6E00","#FFEB01","#00CA1E","#0241FE","#FE00D4"))
+
+```
+
+![example](images/sorted_default_example_customColors.png)
