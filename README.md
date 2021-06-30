@@ -1,6 +1,7 @@
-# Haplotype Rainbow
+# Haplotype RainbowsHaplotypeRainbows
 
 version v1.0.0
+
 
 This is a collection of tools in R to create haplotype "rainbows" with a myriad input as opposed to SNP barcodes which only have binary input. 
 
@@ -9,12 +10,12 @@ This is a collection of tools in R to create haplotype "rainbows" with a myriad 
 Install the most recent release using devtools  
 
 ```r
-devtools::install_github('nickjhathaway/rainbowHaplotypes')
+devtools::install_github('nickjhathaway/HaplotypeRainbows')
 ```
 Or the developmental branch 
 
 ```r
-devtools::install_github('nickjhathaway/rainbowHaplotypes@develop')
+devtools::install_github('nickjhathaway/HaplotypeRainbows@develop')
 ```
 
 # Input 
@@ -35,7 +36,7 @@ These tools were developed to work with [SeekDeep](https://github.com/bailey-lab
 3.  **h_popUID** - A population id for the haplotype for that loci
 4.  **c_AveragedFrac** - A within sample relative abundance of the haplotype
 
-But you can specify column names when using the functions 
+But you can specify column names when using the functions HaplotypeRainbows
 
 ## Prep
 There are two main steps for creating the haplotypes, first is to process the input data to create new data table to create the figures from. The library relies heavily on the [tidyverse](https://www.tidyverse.org/) library.  
@@ -43,7 +44,7 @@ There are two main steps for creating the haplotypes, first is to process the in
 Below uses example data set from *Plasmodium falciparum* lab isolates and mixtures  
  
 ```r
-library(rainbowHaplotypes)
+library(HaplotypeRainbows)
 
 # load example data 
 data("pfisolateExample") 
@@ -76,7 +77,7 @@ genRainbowHapPlotObj(pfIsosHeomeV1_otherName_prep,
 
 ```
 
-This creates a plot where with samples on the y-axis and targets/loci on the x-axis. The within sample frequencies will be taken into account and will adjust the bars accordingly. The colors have meaning in each color, e.g. the same color within a column is the same haplotype, but colors across columns don't relate to each other. 
+This creates a plot where with samples on the y-axis and targets/loci on the x-axis. The within sample frequencies will be taken into account and will adjust the bars accordingly. The colors have meaning in each column, e.g. the same color within a column is the same haplotype, but colors across columns don't relate to each other. 
 
 The package was developed so the colors denoting each major haplotype slightly in hue in each column/loci which ends up creating a repeating "rainbow" across (with default period of 11). 
 
