@@ -1,4 +1,4 @@
-# Haplotype RainbowsHaplotypeRainbows
+# Haplotype Rainbows
 
 version v1.0.0
 
