@@ -1,5 +1,5 @@
-Package: rainbowHaplotypes
-Title: Cretes Rainbow Haplotypes
+Package: HaplotypeRainbows
+Title: Cretes Haplotype Rainbows
 Version: 1.0.0.0
 Authors@R:
     person(given = "Nicholas",
@@ -7,7 +7,7 @@ Authors@R:
            role = c("aut", "cre"),
            email = "nickjhathaway@gmail.com",
            comment = c(ORCID = "https://orcid.org/0000-0001-9639-2894"))
-Description: Cretes Rainbow Haplotypes Graphs.
+Description: Cretes Haplotype Rainbow Graphs.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
