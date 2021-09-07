@@ -2,4 +2,6 @@
 
 export(genRainbowHapPlotObj)
 export(genRainbowHapPlotObjActualFracLogColor)
+export(genRainbowHapPlotObjShade)
 export(prepForRainbow)
+export(prepForRainbowShade)
