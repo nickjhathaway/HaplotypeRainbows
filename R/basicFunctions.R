@@ -185,7 +185,7 @@ prepForRainbowShade <-function(inputData, sampleCol = s_Sample, targetCol= p_nam
 
 
 #' @export
-genRainbowHapPlotObjActualFracLogColor <-function(prepData, sampleCol = s_Sample, targetCol= p_name, popUIDCol = h_popUID, relAbundCol = c_AveragedFrac, colors = RColorBrewer::brewer.pal(11, "Spectral")){
+genRainbowHapPlotObjActualFracLogColor <-function(prepData, sampleCol = s_Sample, targetCol= p_name, popUIDCol = h_popUID, relAbundCol = c_AveragedFrac, colorCol = popidFracLogColor, colors = RColorBrewer::brewer.pal(11, "Spectral")){
   sofonias_theme = theme_bw() +
     theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank() )+
     theme(axis.line.x = element_line(color="black", size = 0.3),axis.line.y =
@@ -205,7 +205,7 @@ genRainbowHapPlotObjActualFracLogColor <-function(prepData, sampleCol = s_Sample
                           xmax = as.numeric({{targetCol}}) +0.5,
                           ymin = as.numeric({{sampleCol}}) + fracModCumSum - 0.5,
                           ymax = as.numeric({{sampleCol}}) + fracModCumSum + relAbundCol_mod - 0.5, 
-                          fill = popidFracLogColor,
+                          fill = {{colorCol}},
                           "{{sampleCol}}" = {{sampleCol}},
                           "{{popUIDCol}}" = {{popUIDCol}},
                           "{{targetCol}}"= {{targetCol}},
@@ -260,8 +260,8 @@ genRainbowHapPlotObjShade <-function(prepData, sampleCol = s_Sample, targetCol= 
 
 
 #' @export
-genRainbowHapPlotObj <-function(prepData, sampleCol = s_Sample, targetCol= p_name, popUIDCol = h_popUID, relAbundCol = c_AveragedFrac, colors = RColorBrewer::brewer.pal(11, "Spectral")){
-  genRainbowHapPlotObjActualFracLogColor(prepData, {{sampleCol}}, {{targetCol}}, {{popUIDCol}}, {{relAbundCol}}, colors)
+genRainbowHapPlotObj <-function(prepData, sampleCol = s_Sample, targetCol= p_name, popUIDCol = h_popUID, relAbundCol = c_AveragedFrac, colorCol = popidFracLogColor, colors = RColorBrewer::brewer.pal(11, "Spectral")){
+  genRainbowHapPlotObjActualFracLogColor(prepData, {{sampleCol}}, {{targetCol}}, {{popUIDCol}}, {{relAbundCol}}, {{colorCol}}, colors)
 }
 
 
