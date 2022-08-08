@@ -216,7 +216,7 @@ genRainbowHapPlotObjActualFracLogColor <-function(prepData, sampleCol = s_Sample
             scale_y_continuous(breaks = 1:length(sampleNamesDf[[1]]), labels = sampleNamesDf[[1]] ) + 
             sofonias_theme + 
             theme(axis.text.x = element_blank()) + 
-            guides(fill = F))
+            guides(fill = "none"))
 } 
 
 
@@ -254,7 +254,7 @@ genRainbowHapPlotObjShade <-function(prepData, sampleCol = s_Sample, targetCol= 
             scale_y_continuous(breaks = 1:length(sampleNamesDf[[1]]), labels = sampleNamesDf[[1]] ) + 
             sofonias_theme + 
             theme(axis.text.x = element_blank()) + 
-            guides(fill = F))
+            guides(fill = "none"))
 } 
 
 
