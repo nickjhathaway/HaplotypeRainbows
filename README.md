@@ -103,7 +103,7 @@ pfIsosHeomeV1_prep_sp = pfIsosHeomeV1_prep %>%
 pfIsosHeomeV1_prep_sp_mat = as.matrix(pfIsosHeomeV1_prep_sp[,2:ncol(pfIsosHeomeV1_prep_sp)])
 rownames(pfIsosHeomeV1_prep_sp_mat) = pfIsosHeomeV1_prep_sp$s_Sample
 pfIsosHeomeV1_prep_sp_dist = dist(pfIsosHeomeV1_prep_sp_mat)
-pfIsosHeomeV1_prep_sp_dist_hclust = hclust(pfIsosHeomeV1_prep_sp_dist)
+pfIsosHeomeV1_prep_sp_dist_hclust = hclust(pfIsosHeomeV1_prep_sp_dist, method = "ward.D2")
 
 #rename the levels so they are in the order of the clustering 
 pfIsosHeomeV1_prep = pfIsosHeomeV1_prep %>% 
