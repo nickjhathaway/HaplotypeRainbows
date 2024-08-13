@@ -200,23 +200,35 @@ genRainbowHapPlotObjActualFracLogColor <-function(prepData, sampleCol = s_Sample
     select({{sampleCol}}) %>% 
     unique() %>% 
     arrange({{sampleCol}})
-  return (ggplot(prepData) + 
-            geom_rect(aes(xmin = as.numeric({{targetCol}}) -0.5,
-                          xmax = as.numeric({{targetCol}}) +0.5,
-                          ymin = as.numeric({{sampleCol}}) + fracModCumSum - 0.5,
-                          ymax = as.numeric({{sampleCol}}) + fracModCumSum + relAbundCol_mod - 0.5, 
-                          fill = {{colorCol}},
-                          "{{sampleCol}}" = {{sampleCol}},
-                          "{{popUIDCol}}" = {{popUIDCol}},
-                          "{{targetCol}}"= {{targetCol}},
-                          "{{relAbundCol}}" = {{relAbundCol}}
-                          ), 
-                      color = "black") + 
-            scale_fill_gradientn(colours = colors) + 
-            scale_y_continuous(breaks = 1:length(sampleNamesDf[[1]]), labels = sampleNamesDf[[1]] ) + 
-            sofonias_theme + 
-            theme(axis.text.x = element_blank()) + 
-            guides(fill = "none"))
+  min_sampleLevel = min(as.numeric(sampleNamesDf[[1]]))
+  max_sampleLevel = max(as.numeric(sampleNamesDf[[1]]))
+  allLevelsLabels = as.character(sampleNamesDf[[1]])
+  names(allLevelsLabels) = as.numeric(sampleNamesDf[[1]])
+  plotLabels = c()
+  for(lev in min_sampleLevel:max_sampleLevel){
+    if(lev %in% names(allLevelsLabels)){
+      plotLabels = c(plotLabels, allLevelsLabels[as.character(lev)])
+    }else{
+      plotLabels = c(plotLabels, "")
+    }
+  }
+    return (ggplot(prepData) + 
+              geom_rect(aes(xmin = as.numeric({{targetCol}}) -0.5,
+                            xmax = as.numeric({{targetCol}}) +0.5,
+                            ymin = as.numeric({{sampleCol}}) + fracModCumSum - 0.5,
+                            ymax = as.numeric({{sampleCol}}) + fracModCumSum + relAbundCol_mod - 0.5, 
+                            fill = {{colorCol}},
+                            "{{sampleCol}}" = {{sampleCol}},
+                            "{{popUIDCol}}" = {{popUIDCol}},
+                            "{{targetCol}}"= {{targetCol}},
+                            "{{relAbundCol}}" = {{relAbundCol}}
+              ), 
+              color = "black") + 
+              scale_fill_gradientn(colours = colors) + 
+              scale_y_continuous(breaks = min_sampleLevel:max_sampleLevel, labels = plotLabels ) + 
+              sofonias_theme + 
+              theme(axis.text.x = element_blank()) + 
+              guides(fill = "none"))
 } 
 
 
@@ -236,6 +248,18 @@ genRainbowHapPlotObjShade <-function(prepData, sampleCol = s_Sample, targetCol= 
     select({{sampleCol}}) %>% 
     unique() %>% 
     arrange({{sampleCol}})
+  min_sampleLevel = min(as.numeric(sampleNamesDf[[1]]))
+  max_sampleLevel = max(as.numeric(sampleNamesDf[[1]]))
+  allLevelsLabels = as.character(sampleNamesDf[[1]])
+  names(allLevelsLabels) = as.numeric(sampleNamesDf[[1]])
+  plotLabels = c()
+  for(lev in min_sampleLevel:max_sampleLevel){
+    if(lev %in% names(allLevelsLabels)){
+      plotLabels = c(plotLabels, allLevelsLabels[as.character(lev)])
+    }else{
+      plotLabels = c(plotLabels, "")
+    }
+  }
   return (ggplot(prepData) + 
             geom_rect(aes(xmin = as.numeric({{targetCol}}) -0.5,
                           xmax = as.numeric({{targetCol}}) +0.5,
@@ -251,7 +275,7 @@ genRainbowHapPlotObjShade <-function(prepData, sampleCol = s_Sample, targetCol= 
             color = "black") + 
             
             scale_fill_identity() + 
-            scale_y_continuous(breaks = 1:length(sampleNamesDf[[1]]), labels = sampleNamesDf[[1]] ) + 
+            scale_y_continuous(breaks = min_sampleLevel:max_sampleLevel, labels = plotLabels ) + 
             sofonias_theme + 
             theme(axis.text.x = element_blank()) + 
             guides(fill = "none"))
