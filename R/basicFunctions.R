@@ -1,5 +1,5 @@
 #' @export
-prepForRainbow <-function(inputData, sampleCol = s_Sample, targetCol= p_name, popUIDCol = h_popUID, relAbundCol = c_AveragedFrac, minPopSize = 3, colorOuput = 11, barHeight = 0.80){
+prepForRainbow <-function(inputData, sampleCol = s_Sample, targetCol= p_name, popUIDCol = h_popUID, relAbundCol = c_AveragedFrac, minPopSize = 1, colorOuput = 11, barHeight = 0.80){
   inputData_filt = inputData %>% 
     group_by({{sampleCol}})  %>% 
     mutate(targetNumber = length(unique({{targetCol}}))) %>% 
