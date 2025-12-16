@@ -1,4 +1,19 @@
+
+#' @title Prep a dataframe for clustering functions, this sorts the alleles by their within sample fraction rather than the population rank  
+#' The input data is processed so that the information needed for the haplotype rainbow plotting functions
+#'
+#' @param inputData the input data 
+#' @param sampleCol the name of the sample column 
+#' @param targetCol the name of the target column
+#' @param popUIDCol the name of the identifier column 
+#' @param relAbundCol the name of the relative abundance column  
+#' @param minPopSize the minimum population size of a target, if a target has less than unique alleles than the target is dropped 
+#' @param colorOuput the number of colors to spread across 
+#' @param barHeight the height of the final full bars per sample, controls whether they touch of not, e.g. barHeight==1 will create touching bars
+#'
+#' @returns the prepped data frame for the plotting function 
 #' @export
+#'
 prepForRainbowArrangedByFrac <-function(inputData, sampleCol = s_Sample, targetCol= p_name, popUIDCol = h_popUID, relAbundCol = c_AveragedFrac, minPopSize = 1, colorOuput = 11, barHeight = 0.80){
   inputData_filt = inputData %>% 
     group_by({{sampleCol}})  %>% 
@@ -90,6 +105,19 @@ prepForRainbowArrangedByFrac <-function(inputData, sampleCol = s_Sample, targetC
 }
 
 
+#' @title Prep a dataframe for clustering functions, this sorts the alleles by their population rank  
+#' The input data is processed so that the information needed for the haplotype rainbow plotting functions
+#'
+#' @param inputData the input data 
+#' @param sampleCol the name of the sample column 
+#' @param targetCol the name of the target column
+#' @param popUIDCol the name of the identifier column 
+#' @param relAbundCol the name of the relative abundance column  
+#' @param minPopSize the minimum population size of a target, if a target has less than unique alleles than the target is dropped 
+#' @param colorOuput the number of colors to spread across 
+#' @param barHeight the height of the final full bars per sample, controls whether they touch of not, e.g. barHeight==1 will create touching bars
+#'
+#' @returns the prepped data frame for the plotting function 
 #' @export
 prepForRainbow <-function(inputData, sampleCol = s_Sample, targetCol= p_name, popUIDCol = h_popUID, relAbundCol = c_AveragedFrac, minPopSize = 1, colorOuput = 11, barHeight = 0.80){
   inputData_filt = inputData %>% 
@@ -180,6 +208,22 @@ prepForRainbow <-function(inputData, sampleCol = s_Sample, targetCol= p_name, po
   return(inputData_filt_tarFilt)
 }
 
+
+
+#' @title Prep a dataframe for clustering functions, this preps for coloring by shading rather than by a rainbow of colors   
+#' The input data is processed so that the information needed for the haplotype rainbow plotting functions
+#'
+#' @param inputData the input data 
+#' @param sampleCol the name of the sample column 
+#' @param targetCol the name of the target column
+#' @param popUIDCol the name of the identifier column 
+#' @param relAbundCol the name of the relative abundance column  
+#' @param minPopSize the minimum population size of a target, if a target has less than unique alleles than the target is dropped 
+#' @param baseColors the colors to create shades from 
+#' @param barHeight the height of the final full bars per sample, controls whether they touch of not, e.g. barHeight==1 will create touching bars
+
+#'
+#' @returns the prepped data frame for the plotting function 
 #' @export
 prepForRainbowShade <-function(inputData, sampleCol = s_Sample, targetCol= p_name, popUIDCol = h_popUID, relAbundCol = c_AveragedFrac, minPopSize = 3, baseColors = c('#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33'), barHeight = 0.80){
   inputData_filt = inputData %>% 
@@ -276,7 +320,19 @@ prepForRainbowShade <-function(inputData, sampleCol = s_Sample, targetCol= p_nam
 }
 
 
+#' @title Create a ggplot object for the plotting by a rainblow of colors    
+#'
+#' @param prepData the prepped data, the columns used should be the same as the prepped 
+#' @param sampleCol the name of the sample column 
+#' @param targetCol the name of the target column
+#' @param popUIDCol the name of the identifier column 
+#' @param relAbundCol the name of the relative abundance column  
+#' @param colorCol the color by which to color 
+#' @param colors the colors to spread across, the number supplied should be the same number given to the prep functions 
+#'
+#' @returns a ggplot2 object that can be further modified 
 #' @export
+#'
 genRainbowHapPlotObjActualFracLogColor <-function(prepData, sampleCol = s_Sample, targetCol= p_name, popUIDCol = h_popUID, relAbundCol = c_AveragedFrac, colorCol = popidFracLogColor, colors = RColorBrewer::brewer.pal(11, "Spectral")){
   sofonias_theme = theme_bw() +
     theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank() )+
@@ -324,7 +380,19 @@ genRainbowHapPlotObjActualFracLogColor <-function(prepData, sampleCol = s_Sample
 } 
 
 
+
+#' @title Create a ggplot object for the plotting by a generating shades of input colors     
+#'
+#' @param prepData the prepped data, the columns used should be the same as the prepped 
+#' @param sampleCol the name of the sample column 
+#' @param targetCol the name of the target column
+#' @param popUIDCol the name of the identifier column 
+#' @param relAbundCol the name of the relative abundance column  
+#' @param colorCol the color by which to color 
+#'
+#' @returns a ggplot2 object that can be further modified 
 #' @export
+#'
 genRainbowHapPlotObjShade <-function(prepData, sampleCol = s_Sample, targetCol= p_name, popUIDCol = h_popUID, relAbundCol = c_AveragedFrac, colorCol = h_color_byFreq_mod){
   sofonias_theme = theme_bw() +
     theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank() )+
@@ -373,11 +441,130 @@ genRainbowHapPlotObjShade <-function(prepData, sampleCol = s_Sample, targetCol= 
             guides(fill = "none"))
 } 
 
-
-
+#' @title Create a ggplot object for the plotting by a rainblow of colors    
+#'
+#' @param prepData the prepped data, the columns used should be the same as the prepped 
+#' @param sampleCol the name of the sample column 
+#' @param targetCol the name of the target column
+#' @param popUIDCol the name of the identifier column 
+#' @param relAbundCol the name of the relative abundance column  
+#' @param colorCol the color by which to color 
+#' @param colors the colors to spread across, the number supplied should be the same number given to the prep functions 
+#'
+#' @returns a ggplot2 object that can be further modified 
 #' @export
+#'
 genRainbowHapPlotObj <-function(prepData, sampleCol = s_Sample, targetCol= p_name, popUIDCol = h_popUID, relAbundCol = c_AveragedFrac, colorCol = popidFracLogColor, colors = RColorBrewer::brewer.pal(11, "Spectral")){
   genRainbowHapPlotObjActualFracLogColor(prepData, {{sampleCol}}, {{targetCol}}, {{popUIDCol}}, {{relAbundCol}}, {{colorCol}}, colors)
 }
 
 
+#' @title Add naming for the x-axis targets and reshape the output plot to have less empty space around plot 
+#'
+#' @param rainbow_plot The rainbow plot object created the gen rainbow plot functions 
+#' @param prepped_allele_data the "preped" table created by the prep functions 
+#' @param sampleCol the sample name column to use, this does not need to be the same as what was used for gen rainbow plot but can be a new name but must be a factor with same number of levels
+#' @param targetCol the character name of the target column to use for the naming of the columns, this does not need to be the same as what was used for gen rainbow plot but can be a new name but must be a factor with same number of levels
+#'
+#' @returns the ggplot object 
+#' @export
+#'
+add_haplotype_rainbow_axis_theming <-function(rainbow_plot, prepped_allele_data,
+                                              sampleCol = s_Sample,
+                                              targetCol = p_name){
+  target_levels = levels(prepped_allele_data %>% pull({{targetCol}}))
+  sample_levels = levels(prepped_allele_data %>% pull({{sampleCol}}))
+  return(rainbow_plot + 
+           scale_x_continuous(
+             labels = target_levels, 
+             breaks = 1:n_distinct(target_levels), 
+             expand = c(0,0)
+           ) + 
+           scale_y_continuous(
+             labels = sample_levels, 
+             breaks = 1:n_distinct(sample_levels), 
+             expand = c(0,0)
+           ) + 
+           theme(axis.text.y = element_text(family = "mono"), 
+                 axis.text.x = element_text(family = "mono", angle = -90, hjust = 0)))
+}
+
+
+
+#' @title resort_prepped_samples_by_clustering 
+#' Reset the sample factor levels to be in order that similar samples based on haplotype sharing
+#'
+#' @param prepped_allele_data the prepped data table 
+#' @param sampleCol the name of the sample column 
+#' @param targetCol the name of the target column
+#' @param popUIDCol the name of the identifier column 
+#' @param relAbundCol the name of the relative abundance column  
+#' @param target_sample_coverage_freq_cut_off the sample coverage per target cut off, targets must have at least this freq of sample coverage to be used in the clustering
+#' @param by_major_allele whether or not to cluster just by the major allele 
+#'
+#' @returns the prepped data frame with the resorted sample levels 
+#' @export
+#'
+resort_prepped_samples_by_clustering <- function(
+    prepped_allele_data,
+    sampleCol = s_Sample,
+    targetCol = p_name,
+    popUIDCol = h_popUID,
+    relAbundCol = c_AveragedFrac,
+    target_sample_coverage_freq_cut_off = 0.80,
+    by_major_allele = FALSE
+) {
+  
+  stopifnot(is.data.frame(prepped_allele_data))
+  
+  # total distinct samples (used for coverage frequency)
+  n_samples_total <- dplyr::n_distinct(dplyr::pull(prepped_allele_data, {{ sampleCol }}))
+  
+  # targets with sufficient sample coverage
+  targets_keep <- prepped_allele_data %>%
+    ungroup() %>% 
+    group_by({{targetCol}}) %>% 
+    dplyr::summarise(
+      sample_count = dplyr::n_distinct({{ sampleCol }})
+    ) %>%
+    dplyr::mutate(sample_freq = sample_count / n_samples_total) %>%
+    dplyr::filter(sample_freq >= target_sample_coverage_freq_cut_off) %>%
+    dplyr::pull({{ targetCol }}) %>% 
+    unique()
+  if(length(targets_keep) == 0){
+    stop("no targets above sample coverage cut off")
+  }
+  dat <- prepped_allele_data %>%
+    filter({{targetCol}} %in% targets_keep)
+  
+  # optionally keep only major allele per (sample, target)
+  if (by_major_allele) {
+    dat <- dat %>%
+      dplyr::group_by({{ sampleCol }}, {{ targetCol }}) %>%
+      dplyr::slice_max(order_by = {{ relAbundCol }}, n = 1, with_ties = FALSE) %>%
+      dplyr::ungroup()
+  }
+  
+  # build sample x popUID presence/absence matrix
+  dat_sp <- dat %>%
+    mutate(new_identifier = paste0({{targetCol}}, "-", {{popUIDCol}})) %>% 
+    ungroup() %>% 
+    dplyr::select({{ sampleCol }},  new_identifier) %>%
+    unique() %>% 
+    dplyr::mutate(marker = 1L) %>%
+    tidyr::pivot_wider(
+      names_from  = new_identifier,
+      values_from = marker,
+      values_fill = 0L
+    )
+  
+  # matrix for clustering
+  dat_sp_mat <- as.matrix(dat_sp[,2:ncol(dat_sp)])
+  rownames(dat_sp_mat) <- dat_sp %>% 
+    dplyr::pull({{ sampleCol }})
+  dat_sp_mat_hc <- stats::hclust(stats::dist(dat_sp_mat), method = "ward.D2")
+  sample_levels <- rownames(dat_sp_mat)[dat_sp_mat_hc$order]
+  
+  prepped_allele_data %>%
+    dplyr::mutate({{ sampleCol }} := factor({{ sampleCol }}, levels = sample_levels))
+}
