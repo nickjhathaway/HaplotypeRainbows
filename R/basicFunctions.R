@@ -571,7 +571,7 @@ resort_prepped_samples_by_clustering <- function(
     ungroup() %>% 
     dplyr::pull({{ sampleCol }})
   
-  sample_levels = c(sample_levels, any_missing_samples)
+  sample_levels = c(as.character(sample_levels), as.character(any_missing_samples))
   
   prepped_allele_data %>%
     dplyr::mutate({{ sampleCol }} := factor({{ sampleCol }}, levels = sample_levels))
