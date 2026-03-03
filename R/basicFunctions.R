@@ -565,6 +565,14 @@ resort_prepped_samples_by_clustering <- function(
   dat_sp_mat_hc <- stats::hclust(stats::dist(dat_sp_mat), method = "ward.D2")
   sample_levels <- rownames(dat_sp_mat)[dat_sp_mat_hc$order]
   
+  # add any samples that were filtered off to the end 
+  any_missing_samples = prepped_allele_data %>%
+    filter(!({{ sampleCol }} %in% sample_levels)) %>% 
+    ungroup() %>% 
+    dplyr::pull({{ sampleCol }})
+  
+  sample_levels = c(sample_levels, any_missing_samples)
+  
   prepped_allele_data %>%
     dplyr::mutate({{ sampleCol }} := factor({{ sampleCol }}, levels = sample_levels))
 }
