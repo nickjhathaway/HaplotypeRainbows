@@ -17,11 +17,20 @@ new_rb <- function() {
   )
 }
 
+# The shade RGBA hex columns are a deterministic function of numeric columns we
+# already compare (cumFreq, modCumFreq, h_id_freq, h_id_freq_mod, p_baseColor), but
+# scales::alpha() quantizes the numeric alpha to an 8-bit byte and rounds differently
+# across platforms at boundaries (e.g. macOS "#FF7F00B3" vs Linux "#FF7F00B2"). We drop
+# these from the byte-exact comparison and verify the numeric drivers instead.
+.volatile_color_cols <- c("h_color", "h_color_mod",
+                          "h_color_byFreq", "h_color_byFreq_mod")
+
 # Compare two prepped frames independent of row order and column order.
 expect_prep_equal <- function(got, expected) {
   keys <- c("s_Sample", "p_name", "h_popUID")
   norm <- function(df) {
     df <- as.data.frame(dplyr::ungroup(df))
+    df <- df[, !names(df) %in% .volatile_color_cols, drop = FALSE]
     df <- df[do.call(order, lapply(df[keys], as.character)), , drop = FALSE]
     df <- df[, order(names(df)), drop = FALSE]
     # compare factor columns by value; their levels are asserted separately
