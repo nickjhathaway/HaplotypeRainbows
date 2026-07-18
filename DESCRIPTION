@@ -1,18 +1,44 @@
 Package: HaplotypeRainbows
-Title: Cretes Haplotype Rainbows
-Version: 1.0.0.0
+Title: Creates Haplotype Rainbow Plots
+Version: 2.0.0
 Authors@R:
     person(given = "Nicholas",
            family = "Hathaway",
            role = c("aut", "cre"),
            email = "nickjhathaway@gmail.com",
            comment = c(ORCID = "https://orcid.org/0000-0001-9639-2894"))
-Description: Cretes Haplotype Rainbow Graphs.
+Description: Creates haplotype "rainbow" plots from targeted amplicon
+    (microhaplotype) sequencing data. Given a table of samples, targets,
+    within-target haplotype identifiers and relative counts, it builds a
+    grid where columns are targets and rows are samples, with each cell
+    showing the within-sample haplotype composition. Haplotype colours
+    rotate across targets to produce the characteristic rainbow. The
+    package exposes a single R6 class, HaplotypeRainbow, that carries the
+    column mapping so it only has to be set once. Column defaults follow
+    the Portable Microhaplotype Object (PMO) convention.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
 Depends:
-	ggplot2,tidyr,dplyr,
-  R (>= 3.5.0)
+    R (>= 4.1.0)
+Imports:
+    R6,
+    rlang,
+    dplyr,
+    tidyr,
+    tibble,
+    ggplot2 (>= 3.4.0),
+    RColorBrewer,
+    scales,
+    stats
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    plotly,
+    pkgdown
+Config/testthat/edition: 3
+URL: https://github.com/nickjhathaway/HaplotypeRainbows
+BugReports: https://github.com/nickjhathaway/HaplotypeRainbows/issues
+Config/roxygen2/version: 8.0.0
