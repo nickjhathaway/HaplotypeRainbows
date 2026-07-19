@@ -1,5 +1,12 @@
 # Haplotype Rainbows
 
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/nickjhathaway/HaplotypeRainbows/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/nickjhathaway/HaplotypeRainbows/actions/workflows/R-CMD-check.yaml)
+[![pkgdown](https://github.com/nickjhathaway/HaplotypeRainbows/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/nickjhathaway/HaplotypeRainbows/actions/workflows/pkgdown.yaml)
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![License: GPL-3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+<!-- badges: end -->
+
 version v2.0.0
 
 A collection of tools in R to create haplotype "rainbows" from targeted amplicon
@@ -14,6 +21,20 @@ characteristic "rainbow".
 > `HaplotypeRainbow`, that carries your column mapping so you only set it once.
 > Column defaults now follow the [PMO](https://plasmogenepi.github.io/PMO_Docs/)
 > convention rather than SeekDeep.
+
+# Documentation
+
+📖 Full documentation, function reference, and a gallery of worked examples live on the
+package website:
+
+**<https://nickjhathaway.github.io/HaplotypeRainbows/>**
+
+The [Articles](https://nickjhathaway.github.io/HaplotypeRainbows/articles/) cover
+[getting started](https://nickjhathaway.github.io/HaplotypeRainbows/articles/getting-started.html),
+[colours & plot styles](https://nickjhathaway.github.io/HaplotypeRainbows/articles/colours.html),
+[sample & target metadata](https://nickjhathaway.github.io/HaplotypeRainbows/articles/metadata.html),
+[clustering & splitting plots](https://nickjhathaway.github.io/HaplotypeRainbows/articles/clustering.html),
+and [saving & interactivity](https://nickjhathaway.github.io/HaplotypeRainbows/articles/saving.html).
 
 # Install
 
