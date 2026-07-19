@@ -301,7 +301,7 @@ HaplotypeRainbow <- R6::R6Class(
     #' @param border Border colour for the band rectangles.
     #' @return A [ggplot2::ggplot] object.
     add_sample_metadata = function(p, cols = NULL, side = "left", width = 1,
-                                   height = 1, gap = 0, plot_gap = 0, colors = NULL,
+                                   height = 1, gap = 0, plot_gap = 1, colors = NULL,
                                    na_color = "grey80", legend = TRUE,
                                    legend_ncol = NULL, legend_nrow = NULL,
                                    labels = TRUE, target_labels = TRUE,
@@ -339,7 +339,7 @@ HaplotypeRainbow <- R6::R6Class(
     #' @param border Border colour for the band rectangles.
     #' @return A [ggplot2::ggplot] object.
     add_target_annotation = function(p, cols = NULL, position = "top", width = 1,
-                                     height = 1, gap = 0, plot_gap = 0, colors = NULL,
+                                     height = 1, gap = 0, plot_gap = 1, colors = NULL,
                                      na_color = "grey80", legend = TRUE,
                                      legend_ncol = NULL, legend_nrow = NULL,
                                      labels = TRUE, sample_labels = TRUE,
@@ -356,15 +356,20 @@ HaplotypeRainbow <- R6::R6Class(
 
     #' @description Suggested figure dimensions (inches) for the current data, scaling
     #'   width with the number of targets and height with the number of samples.
+    #' @param p A ggplot; only needed when `size_include_legend = TRUE`.
     #' @param cell_width Inches per target column.
     #' @param cell_height Inches per sample row.
     #' @param min_width Minimum width.
     #' @param min_height Minimum height.
-    #' @param extra_width Padding added to width (e.g. for a sidebar / legends).
-    #' @param extra_height Padding added to height (e.g. for a target strip / legends).
+    #' @param extra_width Padding added to width (e.g. for a sidebar).
+    #' @param extra_height Padding added to height (e.g. for a target strip).
+    #' @param size_include_legend If `TRUE`, enlarge the size to fit the plot's
+    #'   (bottom) legend as well: widen to at least the legend width and add the
+    #'   legend height. Requires `p`.
     #' @return A list with `width` and `height` (inches).
-    dims = function(cell_width = 0.3, cell_height = 0.3, min_width = 6,
-                    min_height = 6, extra_width = 0, extra_height = 0) {
+    dims = function(p = NULL, cell_width = 0.3, cell_height = 0.3, min_width = 6,
+                    min_height = 6, extra_width = 0, extra_height = 0,
+                    size_include_legend = FALSE) {
       private$require_prepped()
       n_t <- dplyr::n_distinct(
         dplyr::pull(private$prepped, dplyr::all_of(private$cols$target))
@@ -372,8 +377,20 @@ HaplotypeRainbow <- R6::R6Class(
       n_s <- dplyr::n_distinct(
         dplyr::pull(private$prepped, dplyr::all_of(private$cols$sample))
       )
-      list(width  = max(min_width,  n_t * cell_width)  + extra_width,
-           height = max(min_height, n_s * cell_height) + extra_height)
+      w <- max(min_width,  n_t * cell_width)  + extra_width
+      h <- max(min_height, n_s * cell_height) + extra_height
+      if (isTRUE(size_include_legend)) {
+        if (is.null(p)) {
+          stop("size_include_legend = TRUE requires the plot `p`.", call. = FALSE)
+        }
+        lg <- tryCatch(.extract_legend_grob(p), error = function(e) NULL)
+        if (!is.null(lg)) {
+          sz <- .legend_grob_size(lg, margin = 0)
+          w <- max(w, sz[["width"]])
+          h <- h + sz[["height"]]
+        }
+      }
+      list(width = w, height = h)
     },
 
     #' @description Save a plot to PDF, sized automatically from the data when `width` /
@@ -385,13 +402,16 @@ HaplotypeRainbow <- R6::R6Class(
     #' @param width Width in inches (default from `dims()`).
     #' @param height Height in inches (default from `dims()`).
     #' @param device "cairo" (default) or "pdf".
+    #' @param size_include_legend If `TRUE` (and sizing automatically), enlarge the
+    #'   figure so the plot's legend fits too. Default `FALSE`.
     #' @param ... Passed to the graphics device.
     #' @return The file path, invisibly.
     save_pdf = function(p, file, width = NULL, height = NULL,
-                        device = c("cairo", "pdf"), ...) {
+                        device = c("cairo", "pdf"),
+                        size_include_legend = FALSE, ...) {
       device <- match.arg(device)
       if (is.null(width) || is.null(height)) {
-        d <- self$dims()
+        d <- self$dims(p = p, size_include_legend = size_include_legend)
         if (is.null(width)) width <- d$width
         if (is.null(height)) height <- d$height
       }
@@ -424,18 +444,26 @@ HaplotypeRainbow <- R6::R6Class(
     },
 
     #' @description Save just the legend of a plot to PDF (so it can be combined in
-    #'   post with the plot exported via `save_pdf(drop_legends(p), ...)`).
+    #'   post with the plot exported via `save_pdf(drop_legends(p), ...)`). When
+    #'   `width` / `height` are not supplied, the legend's natural size is estimated
+    #'   so it is not clipped.
     #' @param p A ggplot.
     #' @param file Output file path.
-    #' @param width Width in inches.
-    #' @param height Height in inches.
+    #' @param width Width in inches (default: estimated from the legend).
+    #' @param height Height in inches (default: estimated from the legend).
+    #' @param margin Inches of padding added around the estimated size.
     #' @param device "cairo" (default) or "pdf".
     #' @param ... Passed to the graphics device.
     #' @return The file path, invisibly.
-    save_legend_pdf = function(p, file, width = 6, height = 8,
+    save_legend_pdf = function(p, file, width = NULL, height = NULL, margin = 0.2,
                                device = c("cairo", "pdf"), ...) {
       device <- match.arg(device)
       legend <- .extract_legend_grob(p)
+      if (is.null(width) || is.null(height)) {
+        sz <- .legend_grob_size(legend, margin)
+        if (is.null(width)) width <- sz[["width"]]
+        if (is.null(height)) height <- sz[["height"]]
+      }
       if (device == "cairo") {
         grDevices::cairo_pdf(file, width = width, height = height, ...)
       } else {

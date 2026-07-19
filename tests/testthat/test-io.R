@@ -19,6 +19,15 @@ test_that("dims scales with target/sample counts and respects minimums", {
   expect_equal(rb$dims(extra_width = 5)$width, 35)
 })
 
+test_that("dims(size_include_legend) needs p and enlarges the figure", {
+  rb <- new_rb()$prep(sort = "population_rank")
+  expect_error(rb$dims(size_include_legend = TRUE), "requires the plot")
+  p <- suppressWarnings(rb$plot(rank_colors = TRUE))   # has a legend
+  base <- rb$dims()
+  incl <- rb$dims(p = p, size_include_legend = TRUE)
+  expect_gt(incl$height, base$height)
+})
+
 test_that("save_pdf writes a file (base pdf device)", {
   rb <- new_rb()$prep(sort = "population_rank")
   p <- suppressWarnings(rb$plot())
