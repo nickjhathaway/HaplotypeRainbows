@@ -3,12 +3,6 @@ url: https://nickjhathaway.github.io/HaplotypeRainbows
 template:
   bootstrap: 5
 
-articles:
-- title: Articles
-  navbar: ~
-  contents:
-  - examples
-
 reference:
 - title: Package overview
   contents:
