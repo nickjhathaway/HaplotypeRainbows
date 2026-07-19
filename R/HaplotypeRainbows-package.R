@@ -10,6 +10,8 @@
 #' @importFrom RColorBrewer brewer.pal
 #' @importFrom ggnewscale new_scale_fill
 #' @importFrom grDevices colorRampPalette cairo_pdf pdf dev.off col2rgb rgb2hsv
+#' @importFrom grid grid.newpage grid.draw
+#' @importFrom gtable gtable_filter
 ## usethis namespace: end
 NULL
 

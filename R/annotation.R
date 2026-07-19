@@ -63,10 +63,43 @@
   auto
 }
 
+# Resolve a per-band setting (e.g. legend ncol) into a list keyed by column. Accepts
+# NULL (all default), a scalar (same for all), a named vector (per column), or an
+# unnamed vector applied positionally.
+.per_col <- function(x, cols) {
+  out <- stats::setNames(vector("list", length(cols)), cols)
+  if (is.null(x)) return(out)
+  if (!is.null(names(x))) {
+    for (nm in intersect(names(x), cols)) out[[nm]] <- x[[nm]]
+  } else if (length(x) == 1) {
+    for (cc in cols) out[[cc]] <- x[[1]]
+  } else {
+    for (j in seq_along(cols)) if (j <= length(x)) out[[cols[[j]]]] <- x[[j]]
+  }
+  out
+}
+
+# Build the `guide` argument for a metadata band's fill scale.
+.band_guide <- function(legend, ncol, nrow) {
+  if (!isTRUE(legend)) return("none")
+  if (is.null(ncol) && is.null(nrow)) return("legend")
+  ggplot2::guide_legend(ncol = ncol, nrow = nrow)
+}
+
+# Extract the legend (guide-box) grob from a built ggplot, for exporting on its own.
+.extract_legend_grob <- function(p) {
+  gt <- ggplot2::ggplotGrob(p)
+  if (!any(grepl("guide-box", gt$layout$name))) {
+    stop("The plot has no legend to extract.", call. = FALSE)
+  }
+  gtable::gtable_filter(gt, "guide-box")
+}
+
 # Draw the per-sample metadata sidebar (bands to the left or right of the rainbow).
 .add_sample_metadata <- function(p, prepped, sample_meta, sample_key, target_key,
-                                 cols, side, width, height, gap, colors, na_color,
-                                 legend, labels, target_labels, border) {
+                                 cols, side, width, height, gap, plot_gap, colors,
+                                 na_color, legend, legend_ncol, legend_nrow, labels,
+                                 target_labels, border) {
   side <- match.arg(side, c("left", "right"))
   if (is.null(cols)) cols <- setdiff(names(sample_meta), sample_key)
   bad <- setdiff(cols, names(sample_meta))
@@ -74,6 +107,8 @@
     stop("Sample metadata column(s) not found: ",
          paste(bad, collapse = ", "), call. = FALSE)
   }
+  legend_ncol <- .per_col(legend_ncol, cols)
+  legend_nrow <- .per_col(legend_nrow, cols)
 
   samp_levels <- levels(factor(dplyr::pull(prepped, dplyr::all_of(sample_key))))
   tgt_levels  <- levels(factor(dplyr::pull(prepped, dplyr::all_of(target_key))))
@@ -90,10 +125,10 @@
   for (j in seq_along(cols)) {
     cc <- cols[[j]]
     if (side == "left") {
-      inner <- 0.5 - (j - 1) * step
+      inner <- (0.5 - plot_gap) - (j - 1) * step
       xmn <- inner - width; xmx <- inner
     } else {
-      inner <- n_t + 0.5 + (j - 1) * step
+      inner <- (n_t + 0.5 + plot_gap) + (j - 1) * step
       xmn <- inner; xmx <- inner + width
     }
     mids[[j]] <- (xmn + xmx) / 2
@@ -115,7 +150,7 @@
       ) +
       ggplot2::scale_fill_manual(
         name = cc, values = pal[[cc]], na.value = na_color,
-        guide = if (legend) "legend" else "none"
+        guide = .band_guide(legend, legend_ncol[[cc]], legend_nrow[[cc]])
       )
   }
 
@@ -137,8 +172,9 @@
 
 # Draw the per-target annotation strip (bands above or below the rainbow).
 .add_target_annotation <- function(p, prepped, target_meta, sample_key, target_key,
-                                   cols, position, width, height, gap, colors,
-                                   na_color, legend, labels, sample_labels, border) {
+                                   cols, position, width, height, gap, plot_gap,
+                                   colors, na_color, legend, legend_ncol, legend_nrow,
+                                   labels, sample_labels, border) {
   position <- match.arg(position, c("top", "bottom"))
   if (is.null(cols)) cols <- setdiff(names(target_meta), target_key)
   bad <- setdiff(cols, names(target_meta))
@@ -146,6 +182,8 @@
     stop("Target metadata column(s) not found: ",
          paste(bad, collapse = ", "), call. = FALSE)
   }
+  legend_ncol <- .per_col(legend_ncol, cols)
+  legend_nrow <- .per_col(legend_nrow, cols)
 
   samp_levels <- levels(factor(dplyr::pull(prepped, dplyr::all_of(sample_key))))
   tgt_levels  <- levels(factor(dplyr::pull(prepped, dplyr::all_of(target_key))))
@@ -162,10 +200,10 @@
   for (j in seq_along(cols)) {
     cc <- cols[[j]]
     if (position == "top") {
-      inner <- n_s + 0.5 + (j - 1) * step
+      inner <- (n_s + 0.5 + plot_gap) + (j - 1) * step
       ymn <- inner; ymx <- inner + height
     } else {
-      inner <- 0.5 - (j - 1) * step
+      inner <- (0.5 - plot_gap) - (j - 1) * step
       ymn <- inner - height; ymx <- inner
     }
     mids[[j]] <- (ymn + ymx) / 2
@@ -187,7 +225,7 @@
       ) +
       ggplot2::scale_fill_manual(
         name = cc, values = pal[[cc]], na.value = na_color,
-        guide = if (legend) "legend" else "none"
+        guide = .band_guide(legend, legend_ncol[[cc]], legend_nrow[[cc]])
       )
   }
 
