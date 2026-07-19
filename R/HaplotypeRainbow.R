@@ -427,9 +427,10 @@ HaplotypeRainbow <- R6::R6Class(
       n_t <- dplyr::n_distinct(
         dplyr::pull(private$prepped, dplyr::all_of(private$cols$target))
       )
-      n_s <- dplyr::n_distinct(
-        dplyr::pull(private$prepped, dplyr::all_of(private$cols$sample))
-      )
+      # count sample factor levels (not distinct values) so inter-cluster spacer
+      # rows are included in the height.
+      scol <- dplyr::pull(private$prepped, dplyr::all_of(private$cols$sample))
+      n_s <- if (is.factor(scol)) nlevels(scol) else dplyr::n_distinct(scol)
       w <- max(min_width,  n_t * cell_width)  + extra_width
       h <- max(min_height, n_s * cell_height) + extra_height
       if (isTRUE(size_include_legend)) {
@@ -547,6 +548,8 @@ HaplotypeRainbow <- R6::R6Class(
     #' @param device "cairo" (default) or "pdf".
     #' @param combine Combine the per-group pages into one PDF (needs \pkg{qpdf});
     #'   if `FALSE`, write a separate file per group.
+    #' @param align_targets Pad sample-name labels to a common width (mono font) so the
+    #'   plot body / targets line up at the same position on every page. Default `TRUE`.
     #' @param size_include_legend Passed to `dims()` for per-group sizing.
     #' @param bg Device background colour (default "transparent").
     #' @param ... Passed to the graphics device.
@@ -554,16 +557,25 @@ HaplotypeRainbow <- R6::R6Class(
     export_groups_pdf = function(file, plot_fun, by = c("cluster", "meta"),
                                  k = NULL, h = NULL, meta_col = NULL,
                                  device = c("cairo", "pdf"), combine = TRUE,
-                                 size_include_legend = FALSE, bg = "transparent",
-                                 ...) {
+                                 align_targets = TRUE, size_include_legend = FALSE,
+                                 bg = "transparent", ...) {
       private$require_prepped()
       by <- match.arg(by)
       device <- match.arg(device)
       groups <- private$group_samples(by, k, h, meta_col)
       if (length(groups) == 0) stop("No groups to export.", call. = FALSE)
 
+      pad <- if (isTRUE(align_targets)) {
+        max(nchar(unique(as.character(
+          dplyr::pull(private$prepped, dplyr::all_of(private$cols$sample))
+        ))))
+      } else {
+        NULL
+      }
+
       tmps <- vapply(seq_along(groups), function(i) {
         sub <- private$subset_clone(groups[[i]])
+        sub$.__enclos_env__$private$y_label_pad <- pad
         p <- plot_fun(sub)
         d <- sub$dims(p = p, size_include_legend = size_include_legend)
         tf <- tempfile(fileext = ".pdf")
@@ -591,6 +603,45 @@ HaplotypeRainbow <- R6::R6Class(
       invisible(outs)
     },
 
+    #' @description Insert empty spacer rows between clusters, producing a real physical
+    #'   gap between cluster blocks in the plot (the cells, sidebar and cluster bands all
+    #'   shift together, since everything is positioned by the sample factor). Requires a
+    #'   prior `sort_by_clustering()`. Call with `gap = 0` to remove the spacers.
+    #' @param k Number of cluster groups (passed to `cluster_groups()`).
+    #' @param h Height at which to cut the tree (alternative to `k`).
+    #' @param gap Number of blank rows to insert between adjacent clusters.
+    #' @return The object, invisibly (chainable).
+    add_cluster_gaps = function(k = NULL, h = NULL, gap = 1) {
+      private$require_prepped()
+      sc <- private$cols$sample
+      cg <- self$cluster_groups(k = k, h = h)
+      clu <- stats::setNames(as.character(cg$cluster), as.character(cg[[sc]]))
+      cur <- setdiff(levels(factor(dplyr::pull(private$prepped, dplyr::all_of(sc)))),
+                     private$spacer_levels)
+      new_levels <- character(0)
+      spacers <- character(0)
+      prev <- NA_character_
+      gi <- 0L
+      for (lv in cur) {
+        this_clu <- clu[[lv]]
+        if (!is.na(prev) && !is.na(this_clu) && this_clu != prev && gap > 0) {
+          for (s in seq_len(gap)) {
+            gi <- gi + 1L
+            sp <- sprintf(".__gap_%d", gi)
+            new_levels <- c(new_levels, sp)
+            spacers <- c(spacers, sp)
+          }
+        }
+        new_levels <- c(new_levels, lv)
+        if (!is.na(this_clu)) prev <- this_clu
+      }
+      private$prepped <- private$prepped %>%
+        dplyr::mutate("{sc}" := factor(as.character(.data[[sc]]),
+                                       levels = new_levels))
+      private$spacer_levels <- if (length(spacers)) spacers else NULL
+      invisible(self)
+    },
+
     #' @description Overlay alternating translucent background bands, one per cluster
     #'   group, spanning the plot width — a quick way to show clusters on a single plot.
     #'   Requires a prior `sort_by_clustering()`.
@@ -601,16 +652,21 @@ HaplotypeRainbow <- R6::R6Class(
     #'   rainbow shows through).
     #' @param extend_left,extend_right Extend the bands (in cell units) to cover a
     #'   sidebar or annotation strip.
-    #' @param border Border colour for the bands (default none).
+    #' @param expand Push the band edges this many cells past the plotting cells on
+    #'   both sides, widening the panel so the bands are visible as margin strips (the
+    #'   overlay alone can be hard to see over a dense cell grid).
+    #' @param border Border colour for the bands (default none). A visible colour draws
+    #'   a line around each cluster block.
     #' @return A [ggplot2::ggplot] object.
     add_cluster_bands = function(p, k = NULL, h = NULL,
                                  colors = c("#00000025", "#AAAAAA25"),
-                                 extend_left = 0, extend_right = 0, border = NA) {
+                                 extend_left = 0, extend_right = 0, expand = 0,
+                                 border = NA) {
       private$require_prepped()
       groups <- self$cluster_groups(k = k, h = h)
       .add_cluster_bands(p, private$prepped, private$cols$sample,
                          private$cols$target, groups, colors,
-                         extend_left, extend_right, border)
+                         extend_left, extend_right, expand, border)
     },
 
     #' @description Return the prepped data frame (or `NULL` if `prep()` not yet called).
@@ -645,6 +701,8 @@ HaplotypeRainbow <- R6::R6Class(
     sample_meta = NULL,
     target_meta = NULL,
     hclust = NULL,
+    y_label_pad = NULL,
+    spacer_levels = NULL,
 
     require_prepped = function() {
       if (is.null(private$prepped)) {
@@ -914,11 +972,20 @@ HaplotypeRainbow <- R6::R6Class(
           ggplot2::theme(axis.title.x = ggplot2::element_blank())
       }
 
-      # y-axis: same treatment.
+      # y-axis: same treatment. Blank any spacer levels (inter-cluster gaps), and
+      # optionally pad sample-name labels to a fixed width (mono font) so the panel
+      # aligns across separately-rendered plots.
       if (y_axis_labels) {
+        y_labs <- sample_levels
+        if (!is.null(private$spacer_levels)) {
+          y_labs[y_labs %in% private$spacer_levels] <- ""
+        }
+        if (!is.null(private$y_label_pad)) {
+          y_labs <- formatC(y_labs, width = private$y_label_pad)
+        }
         p <- p +
           ggplot2::scale_y_continuous(
-            labels = sample_levels,
+            labels = y_labs,
             breaks = seq_along(sample_levels),
             expand = c(0, 0)
           ) +
