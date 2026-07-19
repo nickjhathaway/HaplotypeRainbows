@@ -54,15 +54,22 @@ HaplotypeRainbow <- R6::R6Class(
     #' @param min_pop_size Drop targets with fewer than this many unique haplotypes.
     #' @param color_period Number of hue steps to rotate across targets.
     #' @param bar_height Height of the full stacked bar per sample; < 1 leaves a gap.
+    #' @param mark_invariant Flag single-haplotype (invariant) targets so that
+    #'   `plot(rank_colors = TRUE)` can colour them separately (black by default).
     #' @return The object, invisibly (chainable).
     prep = function(sort = c("population_rank", "within_sample_freq"),
-                    min_pop_size = 1, color_period = 11, bar_height = 0.80) {
+                    min_pop_size = 1, color_period = 11, bar_height = 0.80,
+                    mark_invariant = FALSE) {
       sort <- match.arg(sort)
       private$prepped <- .prep_engine(
         private$data, private$cols, sort = sort,
         min_pop_size = min_pop_size, color_period = color_period,
         bar_height = bar_height
       )
+      if (isTRUE(mark_invariant)) {
+        private$prepped <- private$prepped %>%
+          dplyr::mutate(is_invariant = maxPopid == 1)
+      }
       private$sort_mode <- sort
       private$color_period <- color_period
       invisible(self)
@@ -201,6 +208,15 @@ HaplotypeRainbow <- R6::R6Class(
     #' @param color_col Column to map to fill for rainbow style
     #'   ("popidFracLogColor" or "popidFracRegColor").
     #' @param shade_col Identity-colour column for shade style.
+    #' @param rank_colors Colour haplotypes by a discrete rank (with a legend) instead
+    #'   of the continuous rainbow gradient. When there are more ranks than palette
+    #'   colours, a colour ramp is interpolated from the palette (with a warning);
+    #'   invariant targets (see `prep(mark_invariant = TRUE)`) get `invariant_color`.
+    #'   Replaces the old harvest-fills-from-`ggplot_build` recipe.
+    #' @param rank_palette Colours for haplotype ranks 1, 2, ... (rank colouring); if
+    #'   there are more ranks than colours, a ramp is interpolated from these.
+    #' @param invariant_color Colour for invariant (single-haplotype) targets.
+    #' @param rank_legend_title Legend title used with `rank_colors`.
     #' @param x_axis_labels Show target names on the x-axis.
     #' @param y_axis_labels Show sample names on the y-axis.
     #' @return A [ggplot2::ggplot] object.
@@ -208,6 +224,10 @@ HaplotypeRainbow <- R6::R6Class(
                     colors = RColorBrewer::brewer.pal(11, "Spectral"),
                     color_col = "popidFracLogColor",
                     shade_col = "h_color_byFreq_mod",
+                    rank_colors = FALSE,
+                    rank_palette = colorPalette_12,
+                    invariant_color = "#000000",
+                    rank_legend_title = "Microhaplotype Rank",
                     x_axis_labels = TRUE, y_axis_labels = TRUE) {
       private$require_prepped()
       if (is.null(style)) {
@@ -220,8 +240,159 @@ HaplotypeRainbow <- R6::R6Class(
       if (style == "shade" && !identical(private$sort_mode, "shade")) {
         stop("style = 'shade' needs data prepped with $prep_shade().", call. = FALSE)
       }
+      if (isTRUE(rank_colors) && identical(private$sort_mode, "shade")) {
+        stop("rank_colors requires data prepped with $prep() (not $prep_shade()).",
+             call. = FALSE)
+      }
+      rank <- if (isTRUE(rank_colors)) {
+        list(palette = rank_palette, invariant_color = invariant_color,
+             title = rank_legend_title)
+      } else {
+        NULL
+      }
       fill_col <- if (style == "rainbow") color_col else shade_col
-      private$build_plot(style, fill_col, colors, x_axis_labels, y_axis_labels)
+      private$build_plot(style, fill_col, colors, x_axis_labels, y_axis_labels, rank)
+    },
+
+    #' @description Return the discrete rank -> colour map used by
+    #'   `plot(rank_colors = TRUE)` (haplotype ranks plus the invariant colour). When
+    #'   there are more ranks than palette colours a ramp is interpolated.
+    #' @param n_ranks Number of ranks to produce colours for (default: the maximum
+    #'   haplotype rank in the prepped data, or the palette length if not prepped).
+    #' @param rank_palette Colours for ranks 1, 2, ...
+    #' @param invariant_color Colour for invariant targets.
+    #' @return A named character vector.
+    get_rank_colors = function(n_ranks = NULL, rank_palette = colorPalette_12,
+                               invariant_color = "#000000") {
+      if (is.null(n_ranks)) {
+        n_ranks <- if (!is.null(private$prepped) &&
+                       "popid" %in% names(private$prepped)) {
+          max(private$prepped[["popid"]], na.rm = TRUE)
+        } else {
+          length(rank_palette)
+        }
+      }
+      pal <- .expand_rank_palette(rank_palette, n_ranks)
+      c(stats::setNames(pal, as.character(seq_len(n_ranks))),
+        invariant = invariant_color)
+    },
+
+    #' @description Add a per-sample metadata sidebar (coloured bands) to a rainbow
+    #'   plot, using the metadata attached with `set_sample_meta()`.
+    #' @param p A ggplot returned by `plot()`.
+    #' @param cols Metadata columns to draw (default: all in the sample-metadata slot),
+    #'   one band each, in order outward from the plot.
+    #' @param side "left" or "right" of the rainbow.
+    #' @param width Band width in cell units (1 = one rainbow cell wide).
+    #' @param height Band height as a fraction of a cell (1 = full cell, centred).
+    #' @param gap Gap between bands in cell units (0 = flush).
+    #' @param colors Optional named list (per column) of value -> colour to override
+    #'   the auto-assigned colours.
+    #' @param na_color Fill for samples missing that metadata value.
+    #' @param legend Draw a colour legend for each band.
+    #' @param labels Draw the band (column-name) labels on the x-axis. Independent of
+    #'   `target_labels`, so band labels can stay on when target names are off.
+    #' @param target_labels Keep the target names on the x-axis.
+    #' @param border Border colour for the band rectangles.
+    #' @return A [ggplot2::ggplot] object.
+    add_sample_metadata = function(p, cols = NULL, side = "left", width = 1,
+                                   height = 1, gap = 0, colors = NULL,
+                                   na_color = "grey80", legend = TRUE,
+                                   labels = TRUE, target_labels = TRUE,
+                                   border = "black") {
+      private$require_prepped()
+      if (is.null(private$sample_meta)) {
+        stop("No sample metadata set; call $set_sample_meta() first.", call. = FALSE)
+      }
+      .add_sample_metadata(p, private$prepped, private$sample_meta,
+                           private$cols$sample, private$cols$target, cols, side,
+                           width, height, gap, colors, na_color, legend, labels,
+                           target_labels, border)
+    },
+
+    #' @description Add a per-target annotation strip (coloured bands) above or below a
+    #'   rainbow plot, using the metadata attached with `set_target_meta()`.
+    #' @param p A ggplot returned by `plot()`.
+    #' @param cols Metadata columns to draw (default: all in the target-metadata slot),
+    #'   one band each, stacked outward from the plot.
+    #' @param position "top" or "bottom" of the rainbow.
+    #' @param width Band width as a fraction of a cell (1 = full cell, centred).
+    #' @param height Band thickness in cell units (1 = one rainbow cell tall).
+    #' @param gap Gap between bands in cell units (0 = flush).
+    #' @param colors Optional named list (per column) of value -> colour to override
+    #'   the auto-assigned colours.
+    #' @param na_color Fill for targets missing that metadata value.
+    #' @param legend Draw a colour legend for each band.
+    #' @param labels Draw the band (column-name) labels on the y-axis. Independent of
+    #'   `sample_labels`.
+    #' @param sample_labels Keep the sample names on the y-axis.
+    #' @param border Border colour for the band rectangles.
+    #' @return A [ggplot2::ggplot] object.
+    add_target_annotation = function(p, cols = NULL, position = "top", width = 1,
+                                     height = 1, gap = 0, colors = NULL,
+                                     na_color = "grey80", legend = TRUE,
+                                     labels = TRUE, sample_labels = TRUE,
+                                     border = "black") {
+      private$require_prepped()
+      if (is.null(private$target_meta)) {
+        stop("No target metadata set; call $set_target_meta() first.", call. = FALSE)
+      }
+      .add_target_annotation(p, private$prepped, private$target_meta,
+                             private$cols$sample, private$cols$target, cols, position,
+                             width, height, gap, colors, na_color, legend, labels,
+                             sample_labels, border)
+    },
+
+    #' @description Suggested figure dimensions (inches) for the current data, scaling
+    #'   width with the number of targets and height with the number of samples.
+    #' @param cell_width Inches per target column.
+    #' @param cell_height Inches per sample row.
+    #' @param min_width Minimum width.
+    #' @param min_height Minimum height.
+    #' @param extra_width Padding added to width (e.g. for a sidebar / legends).
+    #' @param extra_height Padding added to height (e.g. for a target strip / legends).
+    #' @return A list with `width` and `height` (inches).
+    dims = function(cell_width = 0.3, cell_height = 0.3, min_width = 6,
+                    min_height = 6, extra_width = 0, extra_height = 0) {
+      private$require_prepped()
+      n_t <- dplyr::n_distinct(
+        dplyr::pull(private$prepped, dplyr::all_of(private$cols$target))
+      )
+      n_s <- dplyr::n_distinct(
+        dplyr::pull(private$prepped, dplyr::all_of(private$cols$sample))
+      )
+      list(width  = max(min_width,  n_t * cell_width)  + extra_width,
+           height = max(min_height, n_s * cell_height) + extra_height)
+    },
+
+    #' @description Save a plot to PDF, sized automatically from the data when `width` /
+    #'   `height` are not supplied. Uses `cairo_pdf` by default (which keeps hyphens as
+    #'   hyphens rather than converting them to en/em dashes); pass `device = "pdf"` for
+    #'   the base device (e.g. on Windows, where the cairo device can misbehave).
+    #' @param p A ggplot (e.g. from `plot()` or `add_sample_metadata()`).
+    #' @param file Output file path.
+    #' @param width Width in inches (default from `dims()`).
+    #' @param height Height in inches (default from `dims()`).
+    #' @param device "cairo" (default) or "pdf".
+    #' @param ... Passed to the graphics device.
+    #' @return The file path, invisibly.
+    save_pdf = function(p, file, width = NULL, height = NULL,
+                        device = c("cairo", "pdf"), ...) {
+      device <- match.arg(device)
+      if (is.null(width) || is.null(height)) {
+        d <- self$dims()
+        if (is.null(width)) width <- d$width
+        if (is.null(height)) height <- d$height
+      }
+      if (device == "cairo") {
+        grDevices::cairo_pdf(file, width = width, height = height, ...)
+      } else {
+        grDevices::pdf(file, width = width, height = height,
+                       useDingbats = FALSE, ...)
+      }
+      on.exit(grDevices::dev.off())
+      print(p)
+      invisible(file)
     },
 
     #' @description Return the prepped data frame (or `NULL` if `prep()` not yet called).
@@ -388,12 +559,33 @@ HaplotypeRainbow <- R6::R6Class(
         dplyr::mutate("{cols$sample}" := factor(!!s_sym, levels = sample_levels))
     },
 
-    build_plot = function(style, fill_col, colors, x_axis_labels, y_axis_labels) {
+    build_plot = function(style, fill_col, colors, x_axis_labels, y_axis_labels,
+                          rank = NULL) {
       prep_data <- private$prepped
       sc <- private$cols$sample
       tc <- private$cols$target
       hc <- private$cols$popuid
       ac <- private$cols$rel_abund
+
+      # discrete rank colouring: one colour per haplotype rank (interpolating a ramp
+      # from the palette when there are more ranks than colours), plus (if marked) a
+      # separate category for invariant targets.
+      if (!is.null(rank)) {
+        has_inv <- "is_invariant" %in% names(prep_data) &&
+          any(prep_data[["is_invariant"]], na.rm = TRUE)
+        n_rank <- max(prep_data[["popid"]], na.rm = TRUE)
+        if (n_rank > length(rank$palette)) {
+          warning("More haplotype ranks (", n_rank, ") than palette colours (",
+                  length(rank$palette),
+                  "); interpolating a colour ramp from the palette.", call. = FALSE)
+        }
+        rank$palette <- .expand_rank_palette(rank$palette, n_rank)
+        rank_chr <- as.character(prep_data[["popid"]])
+        if (has_inv) rank_chr[which(prep_data[["is_invariant"]])] <- "invariant"
+        lev <- c(as.character(seq_len(n_rank)), if (has_inv) "invariant")
+        prep_data[[".rank"]] <- factor(rank_chr, levels = lev)
+        fill_col <- ".rank"
+      }
 
       # extra (non-standard) aesthetics carried through so ggplotly() can surface
       # them in hover text. Dynamic aesthetic names require !!! splicing in aes().
@@ -413,13 +605,22 @@ HaplotypeRainbow <- R6::R6Class(
 
       p <- ggplot2::ggplot(prep_data) +
         ggplot2::geom_rect(mapping = mapping, color = "black") +
-        .rainbow_theme() +
-        ggplot2::guides(fill = "none")
+        .rainbow_theme()
 
-      p <- p + if (style == "rainbow") {
-        ggplot2::scale_fill_gradientn(colours = colors)
+      if (!is.null(rank)) {
+        vals <- c(
+          stats::setNames(rank$palette, as.character(seq_along(rank$palette))),
+          invariant = rank$invariant_color
+        )
+        p <- p + ggplot2::scale_fill_manual(name = rank$title, values = vals,
+                                            na.value = "grey80")
       } else {
-        ggplot2::scale_fill_identity()
+        p <- p + ggplot2::guides(fill = "none") +
+          if (style == "rainbow") {
+            ggplot2::scale_fill_gradientn(colours = colors)
+          } else {
+            ggplot2::scale_fill_identity()
+          }
       }
 
       target_levels <- levels(dplyr::pull(prep_data, dplyr::all_of(tc)))
