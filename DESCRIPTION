@@ -33,6 +33,8 @@ Imports:
     RColorBrewer,
     scales,
     grDevices,
+    grid,
+    gtable,
     stats
 Suggests:
     testthat (>= 3.0.0),
