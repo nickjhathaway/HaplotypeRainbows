@@ -21,17 +21,19 @@ NULL
 utils::globalVariables(c(
   ".data",
   # canonical column names used inside the engine
-  "s_Sample", "p_name", "h_popUID", "c_AveragedFrac",
-  # derived geometry / ranking columns
-  "targetNumber", "totalAbund", "s_COI", "relAbundCol_mod",
-  "fracCumSum", "fracModCumSum", "fakeFrac", "fakeFracMod",
-  "fakeFracCumSum", "fakeFracModCumSum", "samp_n", "popid", "maxPopid",
-  "popidFrac", "hueMod", "popidPerc", "popidFracRegColor",
-  "popidPercLog", "popidFracLogColor", "is_invariant",
+  "sample", "target", "hapid", "rel_abund",
+  # derived normalisation / geometry columns
+  "n_targets", "total_abund", "within_sample_freq", "within_sample_freq_mod",
+  "sample_coi", "freq_cumsum", "freq_mod_cumsum",
+  "fake_freq", "fake_freq_mod", "fake_freq_cumsum", "fake_freq_mod_cumsum",
+  # ranking columns
+  "samp_n", "pop_id", "max_pop_id", "pop_id_frac", "hue_mod",
+  "pop_id_perc", "pop_id_frac_reg_color", "pop_id_perc_log",
+  "pop_id_frac_log_color", "is_invariant",
   # shade colouring columns
-  "n", "total", "freq", "p_uniqHaps", "h_id", "h_id_freq", "h_id_freq_mod",
-  "cumFreq", "modCumFreq", "p_color_ID", "p_hue", "p_baseColor",
-  "h_color", "h_color_mod", "h_color_byFreq", "h_color_byFreq_mod",
+  "n", "total", "freq", "p_uniq_haps", "h_id", "h_id_freq", "h_id_freq_mod",
+  "cum_freq", "mod_cum_freq", "p_color_id", "p_hue", "p_base_color",
+  "h_color", "h_color_mod", "h_color_by_freq", "h_color_by_freq_mod",
   # clustering / reorder helpers
   "new_identifier", "marker", "sample_count", "sample_freq"
 ))
