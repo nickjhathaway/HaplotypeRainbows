@@ -66,10 +66,34 @@ test_that("export_groups_pdf validates grouping inputs", {
   )
 })
 
+test_that("add_cluster_gaps inserts spacer rows between clusters", {
+  rb <- new_rb()$prep(sort = "population_rank")$sort_by_clustering()
+  n_real <- dplyr::n_distinct(rb$get_prepped()$s_Sample)
+  rb$add_cluster_gaps(k = 6, gap = 2)
+  # 6 clusters -> 5 gaps x 2 rows = 10 spacer levels added
+  expect_equal(nlevels(rb$get_prepped()$s_Sample), n_real + 10)
+  # plot renders and drops spacer labels
+  expect_s3_class(suppressWarnings(rb$plot()), "ggplot")
+  # gap = 0 removes the spacers
+  rb$add_cluster_gaps(k = 6, gap = 0)
+  expect_equal(nlevels(rb$get_prepped()$s_Sample), n_real)
+})
+
+test_that("add_cluster_gaps requires a prior clustering", {
+  expect_error(
+    new_rb()$prep(sort = "population_rank")$add_cluster_gaps(k = 3),
+    "No clustering"
+  )
+})
+
 test_that("add_cluster_bands overlays one band per group", {
   rb <- new_rb()$prep(sort = "population_rank")$sort_by_clustering()
   p <- suppressWarnings(rb$plot())
   expect_s3_class(suppressWarnings(rb$add_cluster_bands(p, k = 5)), "ggplot")
+  expect_s3_class(
+    suppressWarnings(rb$add_cluster_bands(p, k = 5, expand = 2, border = "black")),
+    "ggplot"
+  )
   # needs a k/h, and needs clustering first
   expect_error(rb$add_cluster_bands(p), "Supply either k or h")
   expect_error(

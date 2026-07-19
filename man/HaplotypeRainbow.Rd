@@ -51,6 +51,7 @@ rb$plot()
     \item \href{#method-HaplotypeRainbow-extract_legend}{\code{HaplotypeRainbow$extract_legend()}}
     \item \href{#method-HaplotypeRainbow-save_legend_pdf}{\code{HaplotypeRainbow$save_legend_pdf()}}
     \item \href{#method-HaplotypeRainbow-export_groups_pdf}{\code{HaplotypeRainbow$export_groups_pdf()}}
+    \item \href{#method-HaplotypeRainbow-add_cluster_gaps}{\code{HaplotypeRainbow$add_cluster_gaps()}}
     \item \href{#method-HaplotypeRainbow-add_cluster_bands}{\code{HaplotypeRainbow$add_cluster_bands()}}
     \item \href{#method-HaplotypeRainbow-get_prepped}{\code{HaplotypeRainbow$get_prepped()}}
     \item \href{#method-HaplotypeRainbow-print}{\code{HaplotypeRainbow$print()}}
@@ -825,6 +826,7 @@ using the \pkg{qpdf} package.
   meta_col = NULL,
   device = c("cairo", "pdf"),
   combine = TRUE,
+  align_targets = TRUE,
   size_include_legend = FALSE,
   bg = "transparent",
   ...
@@ -846,6 +848,8 @@ or "meta" (needs \code{set_sample_meta()} and \code{meta_col}).}
       \item{\code{device}}{"cairo" (default) or "pdf".}
       \item{\code{combine}}{Combine the per-group pages into one PDF (needs \pkg{qpdf});
 if \code{FALSE}, write a separate file per group.}
+      \item{\code{align_targets}}{Pad sample-name labels to a common width (mono font) so the
+plot body / targets line up at the same position on every page. Default \code{TRUE}.}
       \item{\code{size_include_legend}}{Passed to \code{dims()} for per-group sizing.}
       \item{\code{bg}}{Device background colour (default "transparent").}
       \item{\code{...}}{Passed to the graphics device.}
@@ -854,6 +858,33 @@ if \code{FALSE}, write a separate file per group.}
   }
   \subsection{Returns}{
     The output path(s), invisibly.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-add_cluster_gaps"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-add_cluster_gaps}{}}}
+\subsection{\code{HaplotypeRainbow$add_cluster_gaps()}}{
+  Insert empty spacer rows between clusters, producing a real physical
+gap between cluster blocks in the plot (the cells, sidebar and cluster bands all
+shift together, since everything is positioned by the sample factor). Requires a
+prior \code{sort_by_clustering()}. Call with \code{gap = 0} to remove the spacers.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$add_cluster_gaps(k = NULL, h = NULL, gap = 1)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{k}}{Number of cluster groups (passed to \code{cluster_groups()}).}
+      \item{\code{h}}{Height at which to cut the tree (alternative to \code{k}).}
+      \item{\code{gap}}{Number of blank rows to insert between adjacent clusters.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    The object, invisibly (chainable).
   }
 }
 
@@ -873,6 +904,7 @@ Requires a prior \code{sort_by_clustering()}.
   colors = c("#00000025", "#AAAAAA25"),
   extend_left = 0,
   extend_right = 0,
+  expand = 0,
   border = NA
 )}
     \if{html}{\out{</div>}}
@@ -887,7 +919,11 @@ Requires a prior \code{sort_by_clustering()}.
 rainbow shows through).}
       \item{\code{extend_left, extend_right}}{Extend the bands (in cell units) to cover a
 sidebar or annotation strip.}
-      \item{\code{border}}{Border colour for the bands (default none).}
+      \item{\code{expand}}{Push the band edges this many cells past the plotting cells on
+both sides, widening the panel so the bands are visible as margin strips (the
+overlay alone can be hard to see over a dense cell grid).}
+      \item{\code{border}}{Border colour for the bands (default none). A visible colour draws
+a line around each cluster block.}
     }
     \if{html}{\out{</div>}}
   }
