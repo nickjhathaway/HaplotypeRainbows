@@ -86,13 +86,48 @@
   ggplot2::guide_legend(ncol = ncol, nrow = nrow)
 }
 
-# Extract the legend (guide-box) grob from a built ggplot, for exporting on its own.
+# Descend a guide-box to the nested gtable that actually holds the legend content
+# (the one with real absolute width). The outer guide-box has flexible `null` spacer
+# cells that would expand — and mis-place the legend — if drawn on its own.
+.legend_content_grob <- function(guide_box) {
+  tf <- tempfile(fileext = ".pdf")
+  grDevices::pdf(tf, width = 50, height = 50)
+  on.exit({
+    grDevices::dev.off()
+    unlink(tf)
+  }, add = TRUE)
+  abs_width <- function(g) {
+    w <- tryCatch(grid::convertWidth(sum(g$widths), "in", valueOnly = TRUE),
+                  error = function(e) 0)
+    if (!is.finite(w)) 0 else w
+  }
+  best <- guide_box
+  best_w <- abs_width(guide_box)
+  recurse <- function(g) {
+    if (!is.null(g$grobs)) {
+      for (ch in g$grobs) {
+        if (inherits(ch, "gtable")) {
+          cw <- abs_width(ch)
+          if (cw > best_w) {
+            best <<- ch
+            best_w <<- cw
+          }
+          recurse(ch)
+        }
+      }
+    }
+  }
+  recurse(guide_box)
+  best
+}
+
+# Extract the legend grob from a built ggplot, for exporting/composing on its own.
 .extract_legend_grob <- function(p) {
   gt <- ggplot2::ggplotGrob(p)
   if (!any(grepl("guide-box", gt$layout$name))) {
     stop("The plot has no legend to extract.", call. = FALSE)
   }
-  gtable::gtable_filter(gt, "guide-box")
+  .legend_content_grob(gtable::gtable_filter(gt, "guide-box"))
 }
 
 # Estimate the natural size (inches) of a legend grob, so it can be exported without

@@ -404,11 +404,12 @@ HaplotypeRainbow <- R6::R6Class(
     #' @param device "cairo" (default) or "pdf".
     #' @param size_include_legend If `TRUE` (and sizing automatically), enlarge the
     #'   figure so the plot's legend fits too. Default `FALSE`.
+    #' @param bg Background colour of the device; defaults to "transparent".
     #' @param ... Passed to the graphics device.
     #' @return The file path, invisibly.
     save_pdf = function(p, file, width = NULL, height = NULL,
                         device = c("cairo", "pdf"),
-                        size_include_legend = FALSE, ...) {
+                        size_include_legend = FALSE, bg = "transparent", ...) {
       device <- match.arg(device)
       if (is.null(width) || is.null(height)) {
         d <- self$dims(p = p, size_include_legend = size_include_legend)
@@ -416,9 +417,9 @@ HaplotypeRainbow <- R6::R6Class(
         if (is.null(height)) height <- d$height
       }
       if (device == "cairo") {
-        grDevices::cairo_pdf(file, width = width, height = height, ...)
+        grDevices::cairo_pdf(file, width = width, height = height, bg = bg, ...)
       } else {
-        grDevices::pdf(file, width = width, height = height,
+        grDevices::pdf(file, width = width, height = height, bg = bg,
                        useDingbats = FALSE, ...)
       }
       on.exit(grDevices::dev.off())
@@ -453,10 +454,11 @@ HaplotypeRainbow <- R6::R6Class(
     #' @param height Height in inches (default: estimated from the legend).
     #' @param margin Inches of padding added around the estimated size.
     #' @param device "cairo" (default) or "pdf".
+    #' @param bg Background colour of the device; defaults to "transparent".
     #' @param ... Passed to the graphics device.
     #' @return The file path, invisibly.
     save_legend_pdf = function(p, file, width = NULL, height = NULL, margin = 0.2,
-                               device = c("cairo", "pdf"), ...) {
+                               device = c("cairo", "pdf"), bg = "transparent", ...) {
       device <- match.arg(device)
       legend <- .extract_legend_grob(p)
       if (is.null(width) || is.null(height)) {
@@ -465,9 +467,9 @@ HaplotypeRainbow <- R6::R6Class(
         if (is.null(height)) height <- sz[["height"]]
       }
       if (device == "cairo") {
-        grDevices::cairo_pdf(file, width = width, height = height, ...)
+        grDevices::cairo_pdf(file, width = width, height = height, bg = bg, ...)
       } else {
-        grDevices::pdf(file, width = width, height = height,
+        grDevices::pdf(file, width = width, height = height, bg = bg,
                        useDingbats = FALSE, ...)
       }
       on.exit(grDevices::dev.off())
