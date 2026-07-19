@@ -206,6 +206,38 @@
   c(width = w + 2 * margin, height = h + 2 * margin)
 }
 
+# Draw alternating translucent background bands, one per cluster group, spanning the
+# plot width. `groups` is a tibble with the sample column and a `cluster` factor.
+.add_cluster_bands <- function(p, prepped, sample_key, target_key, groups, colors,
+                               extend_left, extend_right, border) {
+  samp_levels <- levels(factor(dplyr::pull(prepped, dplyr::all_of(sample_key))))
+  tgt_levels  <- levels(factor(dplyr::pull(prepped, dplyr::all_of(target_key))))
+  n_t <- length(tgt_levels)
+  pos <- stats::setNames(seq_along(samp_levels), samp_levels)
+
+  g <- as.data.frame(groups)
+  g[["pos"]] <- pos[as.character(g[[sample_key]])]
+  g <- g[!is.na(g[["pos"]]), , drop = FALSE]
+  bands <- g %>%
+    dplyr::group_by(.data[["cluster"]]) %>%
+    dplyr::summarise(ymin = min(.data[["pos"]]) - 0.5,
+                     ymax = max(.data[["pos"]]) + 0.5, .groups = "drop") %>%
+    dplyr::arrange(.data[["ymin"]]) %>%
+    dplyr::mutate(fill = colors[(dplyr::row_number() - 1) %% length(colors) + 1])
+
+  p +
+    ggnewscale::new_scale_fill() +
+    ggplot2::geom_rect(
+      data = bands,
+      mapping = ggplot2::aes(
+        xmin = 0.5 - extend_left, xmax = n_t + 0.5 + extend_right,
+        ymin = .data[["ymin"]], ymax = .data[["ymax"]], fill = .data[["fill"]]
+      ),
+      colour = border
+    ) +
+    ggplot2::scale_fill_identity()
+}
+
 # Draw the per-sample metadata sidebar (bands to the left or right of the rainbow).
 .add_sample_metadata <- function(p, prepped, sample_meta, sample_key, target_key,
                                  cols, side, width, height, gap, plot_gap, colors,
