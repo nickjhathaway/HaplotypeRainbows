@@ -37,3 +37,6 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+# pkgdown local preview (site is built on CI to gh-pages)
+docs/
