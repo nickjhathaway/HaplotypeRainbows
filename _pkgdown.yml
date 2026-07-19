@@ -3,6 +3,16 @@ url: https://nickjhathaway.github.io/HaplotypeRainbows
 template:
   bootstrap: 5
 
+articles:
+- title: Articles
+  navbar: ~
+  contents:
+  - matches("getting-started")
+  - matches("colours")
+  - matches("metadata")
+  - matches("clustering")
+  - matches("saving")
+
 reference:
 - title: Package overview
   contents:
