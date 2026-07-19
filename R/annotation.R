@@ -120,6 +120,13 @@
   aligned
 }
 
+# Levels of a (possibly spacer-augmented) factor column, WITHOUT dropping unused
+# levels — so spacer levels inserted between clusters keep their y positions.
+.factor_levels <- function(prepped, key) {
+  x <- dplyr::pull(prepped, dplyr::all_of(key))
+  if (is.factor(x)) levels(x) else levels(factor(x))
+}
+
 # Build the `guide` argument for a metadata band's fill scale.
 .band_guide <- function(legend, ncol, nrow) {
   if (!isTRUE(legend)) return("none")
@@ -206,6 +213,43 @@
   c(width = w + 2 * margin, height = h + 2 * margin)
 }
 
+# Draw alternating translucent background bands, one per cluster group, spanning the
+# plot width. `groups` is a tibble with the sample column and a `cluster` factor.
+# `expand` pushes the band edges `expand` cells past the plotting cells on both sides
+# (widening the panel), so the bands show as clearly visible strips in the margin even
+# when the cell grid is dense.
+.add_cluster_bands <- function(p, prepped, sample_key, target_key, groups, colors,
+                               extend_left, extend_right, expand, border) {
+  samp_levels <- .factor_levels(prepped, sample_key)
+  tgt_levels  <- .factor_levels(prepped, target_key)
+  n_t <- length(tgt_levels)
+  pos <- stats::setNames(seq_along(samp_levels), samp_levels)
+
+  g <- as.data.frame(groups)
+  g[["pos"]] <- pos[as.character(g[[sample_key]])]
+  g <- g[!is.na(g[["pos"]]), , drop = FALSE]
+  bands <- g %>%
+    dplyr::group_by(.data[["cluster"]]) %>%
+    dplyr::summarise(ymin = min(.data[["pos"]]) - 0.5,
+                     ymax = max(.data[["pos"]]) + 0.5, .groups = "drop") %>%
+    dplyr::arrange(.data[["ymin"]]) %>%
+    dplyr::mutate(fill = colors[(dplyr::row_number() - 1) %% length(colors) + 1])
+
+  xmn <- 0.5 - extend_left - expand
+  xmx <- n_t + 0.5 + extend_right + expand
+  p +
+    ggnewscale::new_scale_fill() +
+    ggplot2::geom_rect(
+      data = bands,
+      mapping = ggplot2::aes(
+        xmin = xmn, xmax = xmx,
+        ymin = .data[["ymin"]], ymax = .data[["ymax"]], fill = .data[["fill"]]
+      ),
+      colour = border
+    ) +
+    ggplot2::scale_fill_identity()
+}
+
 # Draw the per-sample metadata sidebar (bands to the left or right of the rainbow).
 .add_sample_metadata <- function(p, prepped, sample_meta, sample_key, target_key,
                                  cols, side, width, height, gap, plot_gap, colors,
@@ -221,13 +265,17 @@
   legend_ncol <- .per_col(legend_ncol, cols)
   legend_nrow <- .per_col(legend_nrow, cols)
 
-  samp_levels <- levels(factor(dplyr::pull(prepped, dplyr::all_of(sample_key))))
-  tgt_levels  <- levels(factor(dplyr::pull(prepped, dplyr::all_of(target_key))))
+  samp_levels <- .factor_levels(prepped, sample_key)
+  tgt_levels  <- .factor_levels(prepped, target_key)
   n_t <- length(tgt_levels)
 
   aligned <- tibble::tibble(!!sample_key := samp_levels) %>%
     dplyr::left_join(sample_meta, by = sample_key)
   aligned[[".ypos"]] <- seq_along(samp_levels)
+  # drop spacer rows (levels with no data, e.g. inter-cluster gaps) so we don't draw
+  # empty metadata boxes there; their positions are already baked into .ypos.
+  real <- unique(as.character(dplyr::pull(prepped, dplyr::all_of(sample_key))))
+  aligned <- aligned[aligned[[sample_key]] %in% real, , drop = FALSE]
   aligned <- .apply_level_order(aligned, cols, level_order)
 
   pal <- .merge_colors(.auto_meta_colors(aligned, cols), colors)
@@ -297,8 +345,8 @@
   legend_ncol <- .per_col(legend_ncol, cols)
   legend_nrow <- .per_col(legend_nrow, cols)
 
-  samp_levels <- levels(factor(dplyr::pull(prepped, dplyr::all_of(sample_key))))
-  tgt_levels  <- levels(factor(dplyr::pull(prepped, dplyr::all_of(target_key))))
+  samp_levels <- .factor_levels(prepped, sample_key)
+  tgt_levels  <- .factor_levels(prepped, target_key)
   n_s <- length(samp_levels)
 
   aligned <- tibble::tibble(!!target_key := tgt_levels) %>%

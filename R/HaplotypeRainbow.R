@@ -94,17 +94,63 @@ HaplotypeRainbow <- R6::R6Class(
     },
 
     #' @description Reorder samples so that similar samples (by haplotype sharing) sit
-    #'   next to each other, via hierarchical clustering (ward.D2).
+    #'   next to each other, via hierarchical clustering. The fitted `hclust` object is
+    #'   stored (see `get_hclust()` / `get_dendrogram()` / `cluster_groups()`).
     #' @param by_major_allele Cluster on only the major haplotype per (sample, target).
     #' @param coverage_cutoff Keep only targets present in at least this fraction of
-    #'   samples for the clustering.
+    #'   samples for the clustering (ignored when `targets` is supplied).
+    #' @param targets Optional character vector of target names to cluster on; when
+    #'   given, only these targets are used (instead of the coverage-based selection).
+    #' @param dist_method Distance method passed to [stats::dist()].
+    #' @param hclust_method Linkage method passed to [stats::hclust()].
     #' @return The object, invisibly (chainable).
-    sort_by_clustering = function(by_major_allele = FALSE, coverage_cutoff = 0.80) {
+    sort_by_clustering = function(by_major_allele = FALSE, coverage_cutoff = 0.80,
+                                  targets = NULL, dist_method = "euclidean",
+                                  hclust_method = "ward.D2") {
       private$require_prepped()
-      private$prepped <- private$resort_clustering(
-        private$prepped, private$cols, coverage_cutoff, by_major_allele
+      res <- private$resort_clustering(
+        private$prepped, private$cols, coverage_cutoff, by_major_allele,
+        targets, dist_method, hclust_method
       )
+      private$prepped <- res$prepped
+      private$hclust <- res$hclust
       invisible(self)
+    },
+
+    #' @description Return the `hclust` object from the last `sort_by_clustering()`.
+    #' @return An [stats::hclust] object.
+    get_hclust = function() {
+      if (is.null(private$hclust)) {
+        stop("No clustering yet; call $sort_by_clustering() first.", call. = FALSE)
+      }
+      private$hclust
+    },
+
+    #' @description Return the clustering as a dendrogram.
+    #' @return A [stats::dendrogram].
+    get_dendrogram = function() {
+      stats::as.dendrogram(self$get_hclust())
+    },
+
+    #' @description Cut the stored clustering into groups (by number of groups `k` or
+    #'   height `h`). Groups are relabelled 1, 2, ... in dendrogram order.
+    #' @param k Desired number of groups.
+    #' @param h Height at which to cut the tree.
+    #' @return A tibble with the sample column and a `cluster` factor.
+    cluster_groups = function(k = NULL, h = NULL) {
+      hc <- self$get_hclust()
+      if (is.null(k) && is.null(h)) {
+        stop("Supply either k or h.", call. = FALSE)
+      }
+      cg <- stats::cutree(hc, k = k, h = h)
+      ordered_samples <- hc$labels[hc$order]
+      grp_in_order <- cg[ordered_samples]
+      new_id <- match(grp_in_order, unique(grp_in_order))
+      sc <- private$cols$sample
+      tibble::tibble(
+        "{sc}" := ordered_samples,
+        cluster = factor(new_id, levels = unique(new_id))
+      )
     },
 
     #' @description Set the sample order explicitly.
@@ -381,9 +427,10 @@ HaplotypeRainbow <- R6::R6Class(
       n_t <- dplyr::n_distinct(
         dplyr::pull(private$prepped, dplyr::all_of(private$cols$target))
       )
-      n_s <- dplyr::n_distinct(
-        dplyr::pull(private$prepped, dplyr::all_of(private$cols$sample))
-      )
+      # count sample factor levels (not distinct values) so inter-cluster spacer
+      # rows are included in the height.
+      scol <- dplyr::pull(private$prepped, dplyr::all_of(private$cols$sample))
+      n_s <- if (is.factor(scol)) nlevels(scol) else dplyr::n_distinct(scol)
       w <- max(min_width,  n_t * cell_width)  + extra_width
       h <- max(min_height, n_s * cell_height) + extra_height
       if (isTRUE(size_include_legend)) {
@@ -408,7 +455,8 @@ HaplotypeRainbow <- R6::R6Class(
     #' @param file Output file path.
     #' @param width Width in inches (default from `dims()`).
     #' @param height Height in inches (default from `dims()`).
-    #' @param device "cairo" (default) or "pdf".
+    #' @param device "cairo" (default) or "pdf"; cairo falls back to pdf() when the
+    #'   platform lacks cairo support.
     #' @param size_include_legend If `TRUE` (and sizing automatically), enlarge the
     #'   figure so the plot's legend fits too. Default `FALSE`.
     #' @param bg Background colour of the device; defaults to "transparent".
@@ -423,7 +471,8 @@ HaplotypeRainbow <- R6::R6Class(
         if (is.null(width)) width <- d$width
         if (is.null(height)) height <- d$height
       }
-      if (device == "cairo") {
+      # fall back to pdf() when cairo is requested but unavailable on this platform
+      if (device == "cairo" && capabilities("cairo")) {
         grDevices::cairo_pdf(file, width = width, height = height, bg = bg, ...)
       } else {
         grDevices::pdf(file, width = width, height = height, bg = bg,
@@ -460,7 +509,8 @@ HaplotypeRainbow <- R6::R6Class(
     #' @param width Width in inches (default: estimated from the legend).
     #' @param height Height in inches (default: estimated from the legend).
     #' @param margin Inches of padding added around the estimated size.
-    #' @param device "cairo" (default) or "pdf".
+    #' @param device "cairo" (default) or "pdf"; cairo falls back to pdf() when the
+    #'   platform lacks cairo support.
     #' @param bg Background colour of the device; defaults to "transparent".
     #' @param ... Passed to the graphics device.
     #' @return The file path, invisibly.
@@ -473,7 +523,8 @@ HaplotypeRainbow <- R6::R6Class(
         if (is.null(width)) width <- sz[["width"]]
         if (is.null(height)) height <- sz[["height"]]
       }
-      if (device == "cairo") {
+      # fall back to pdf() when cairo is requested but unavailable on this platform
+      if (device == "cairo" && capabilities("cairo")) {
         grDevices::cairo_pdf(file, width = width, height = height, bg = bg, ...)
       } else {
         grDevices::pdf(file, width = width, height = height, bg = bg,
@@ -483,6 +534,144 @@ HaplotypeRainbow <- R6::R6Class(
       grid::grid.newpage()
       grid::grid.draw(legend)
       invisible(file)
+    },
+
+    #' @description Export one plot per group (cluster or sample-metadata value) to
+    #'   PDF, auto-sizing each plot to its own sample count. By default the per-group
+    #'   pages are combined into a single multi-page PDF (with correctly-sized pages)
+    #'   using the \pkg{qpdf} package.
+    #' @param file Output PDF path (or, with `combine = FALSE`, a template whose
+    #'   `.pdf` is suffixed with each group label).
+    #' @param plot_fun A function of one argument: it receives a per-group
+    #'   HaplotypeRainbow (with the prepped data filtered to that group) and returns a
+    #'   ggplot. e.g. `function(sub) sub$plot()`.
+    #' @param by Group by "cluster" (needs a prior `sort_by_clustering()` and `k`/`h`)
+    #'   or "meta" (needs `set_sample_meta()` and `meta_col`).
+    #' @param k,h Cluster cut (when `by = "cluster"`).
+    #' @param meta_col Sample-metadata column to group by (when `by = "meta"`).
+    #' @param device "cairo" (default) or "pdf"; cairo falls back to pdf() when the
+    #'   platform lacks cairo support.
+    #' @param combine Combine the per-group pages into one PDF (needs \pkg{qpdf});
+    #'   if `FALSE`, write a separate file per group.
+    #' @param align_targets Pad sample-name labels to a common width (mono font) so the
+    #'   plot body / targets line up at the same position on every page. Default `TRUE`.
+    #' @param size_include_legend Passed to `dims()` for per-group sizing.
+    #' @param bg Device background colour (default "transparent").
+    #' @param ... Passed to the graphics device.
+    #' @return The output path(s), invisibly.
+    export_groups_pdf = function(file, plot_fun, by = c("cluster", "meta"),
+                                 k = NULL, h = NULL, meta_col = NULL,
+                                 device = c("cairo", "pdf"), combine = TRUE,
+                                 align_targets = TRUE, size_include_legend = FALSE,
+                                 bg = "transparent", ...) {
+      private$require_prepped()
+      by <- match.arg(by)
+      device <- match.arg(device)
+      groups <- private$group_samples(by, k, h, meta_col)
+      if (length(groups) == 0) stop("No groups to export.", call. = FALSE)
+
+      pad <- if (isTRUE(align_targets)) {
+        max(nchar(unique(as.character(
+          dplyr::pull(private$prepped, dplyr::all_of(private$cols$sample))
+        ))))
+      } else {
+        NULL
+      }
+
+      tmps <- vapply(seq_along(groups), function(i) {
+        sub <- private$subset_clone(groups[[i]])
+        sub$.__enclos_env__$private$y_label_pad <- pad
+        p <- plot_fun(sub)
+        d <- sub$dims(p = p, size_include_legend = size_include_legend)
+        tf <- tempfile(fileext = ".pdf")
+        sub$save_pdf(p, tf, width = d$width, height = d$height,
+                     device = device, bg = bg, ...)
+        tf
+      }, character(1))
+
+      if (isTRUE(combine)) {
+        if (!requireNamespace("qpdf", quietly = TRUE)) {
+          stop("Combining requires the 'qpdf' package; install it or use ",
+               "combine = FALSE.", call. = FALSE)
+        }
+        qpdf::pdf_combine(input = tmps, output = file)
+        unlink(tmps)
+        return(invisible(file))
+      }
+      outs <- vapply(seq_along(groups), function(i) {
+        safe <- gsub("[^A-Za-z0-9._-]", "_", names(groups)[[i]])
+        out <- sub("\\.pdf$", paste0("_", safe, ".pdf"), file)
+        file.copy(tmps[[i]], out, overwrite = TRUE)
+        out
+      }, character(1))
+      unlink(tmps)
+      invisible(outs)
+    },
+
+    #' @description Insert empty spacer rows between clusters, producing a real physical
+    #'   gap between cluster blocks in the plot (the cells, sidebar and cluster bands all
+    #'   shift together, since everything is positioned by the sample factor). Requires a
+    #'   prior `sort_by_clustering()`. Call with `gap = 0` to remove the spacers.
+    #' @param k Number of cluster groups (passed to `cluster_groups()`).
+    #' @param h Height at which to cut the tree (alternative to `k`).
+    #' @param gap Number of blank rows to insert between adjacent clusters.
+    #' @return The object, invisibly (chainable).
+    add_cluster_gaps = function(k = NULL, h = NULL, gap = 1) {
+      private$require_prepped()
+      sc <- private$cols$sample
+      cg <- self$cluster_groups(k = k, h = h)
+      clu <- stats::setNames(as.character(cg$cluster), as.character(cg[[sc]]))
+      cur <- setdiff(levels(factor(dplyr::pull(private$prepped, dplyr::all_of(sc)))),
+                     private$spacer_levels)
+      new_levels <- character(0)
+      spacers <- character(0)
+      prev <- NA_character_
+      gi <- 0L
+      for (lv in cur) {
+        this_clu <- clu[[lv]]
+        if (!is.na(prev) && !is.na(this_clu) && this_clu != prev && gap > 0) {
+          for (s in seq_len(gap)) {
+            gi <- gi + 1L
+            sp <- sprintf(".__gap_%d", gi)
+            new_levels <- c(new_levels, sp)
+            spacers <- c(spacers, sp)
+          }
+        }
+        new_levels <- c(new_levels, lv)
+        if (!is.na(this_clu)) prev <- this_clu
+      }
+      private$prepped <- private$prepped %>%
+        dplyr::mutate("{sc}" := factor(as.character(.data[[sc]]),
+                                       levels = new_levels))
+      private$spacer_levels <- if (length(spacers)) spacers else NULL
+      invisible(self)
+    },
+
+    #' @description Overlay alternating translucent background bands, one per cluster
+    #'   group, spanning the plot width — a quick way to show clusters on a single plot.
+    #'   Requires a prior `sort_by_clustering()`.
+    #' @param p A ggplot returned by `plot()`.
+    #' @param k Number of cluster groups (passed to `cluster_groups()`).
+    #' @param h Height at which to cut the tree (alternative to `k`).
+    #' @param colors Colours to alternate between (translucent by default so the
+    #'   rainbow shows through).
+    #' @param extend_left,extend_right Extend the bands (in cell units) to cover a
+    #'   sidebar or annotation strip.
+    #' @param expand Push the band edges this many cells past the plotting cells on
+    #'   both sides, widening the panel so the bands are visible as margin strips (the
+    #'   overlay alone can be hard to see over a dense cell grid).
+    #' @param border Border colour for the bands (default none). A visible colour draws
+    #'   a line around each cluster block.
+    #' @return A [ggplot2::ggplot] object.
+    add_cluster_bands = function(p, k = NULL, h = NULL,
+                                 colors = c("#00000025", "#AAAAAA25"),
+                                 extend_left = 0, extend_right = 0, expand = 0,
+                                 border = NA) {
+      private$require_prepped()
+      groups <- self$cluster_groups(k = k, h = h)
+      .add_cluster_bands(p, private$prepped, private$cols$sample,
+                         private$cols$target, groups, colors,
+                         extend_left, extend_right, expand, border)
     },
 
     #' @description Return the prepped data frame (or `NULL` if `prep()` not yet called).
@@ -516,11 +705,53 @@ HaplotypeRainbow <- R6::R6Class(
     color_period = 11,
     sample_meta = NULL,
     target_meta = NULL,
+    hclust = NULL,
+    y_label_pad = NULL,
+    spacer_levels = NULL,
 
     require_prepped = function() {
       if (is.null(private$prepped)) {
         stop("Call $prep() before this operation.", call. = FALSE)
       }
+    },
+
+    # Split the (currently present) samples into named groups by cluster or metadata.
+    group_samples = function(by, k, h, meta_col) {
+      sc <- private$cols$sample
+      present <- unique(as.character(dplyr::pull(private$prepped, dplyr::all_of(sc))))
+      if (by == "cluster") {
+        cg <- self$cluster_groups(k = k, h = h)
+        split(as.character(cg[[sc]]), cg[["cluster"]])
+      } else {
+        if (is.null(private$sample_meta)) {
+          stop("No sample metadata set; call $set_sample_meta() first.",
+               call. = FALSE)
+        }
+        if (is.null(meta_col) || !meta_col %in% names(private$sample_meta)) {
+          stop("meta_col not found in the sample metadata.", call. = FALSE)
+        }
+        m <- private$sample_meta
+        m <- m[as.character(m[[sc]]) %in% present, , drop = FALSE]
+        grp <- as.character(m[[meta_col]])
+        grp[is.na(grp)] <- "NA"
+        split(as.character(m[[sc]]), grp)
+      }
+    },
+
+    # Clone the object with the prepped data filtered to a subset of samples (levels
+    # preserved in current order), so global colours stay consistent across groups.
+    subset_clone = function(keep) {
+      sub <- self$clone(deep = TRUE)
+      priv <- sub$.__enclos_env__$private
+      sc <- priv$cols$sample
+      keep <- as.character(keep)
+      cur <- levels(factor(dplyr::pull(priv$prepped, dplyr::all_of(sc))))
+      new_levels <- cur[cur %in% keep]
+      priv$prepped <- priv$prepped %>%
+        dplyr::filter(as.character(.data[[sc]]) %in% keep) %>%
+        dplyr::mutate("{sc}" := factor(as.character(.data[[sc]]),
+                                       levels = new_levels))
+      sub
     },
 
     # Store sample/target metadata on the object. `kind` is "sample" or "target";
@@ -594,25 +825,36 @@ HaplotypeRainbow <- R6::R6Class(
         dplyr::mutate("{key}" := factor(.data[[key]], levels = ordered))
     },
 
-    # Port of the historical resort_prepped_samples_by_clustering().
-    resort_clustering = function(prepped, cols, coverage_cutoff, by_major_allele) {
+    # Port of the historical resort_prepped_samples_by_clustering(), returning both the
+    # reordered data and the fitted hclust object.
+    resort_clustering = function(prepped, cols, coverage_cutoff, by_major_allele,
+                                 targets, dist_method, hclust_method) {
       s_sym <- rlang::sym(cols$sample)
       t_sym <- rlang::sym(cols$target)
       h_sym <- rlang::sym(cols$popuid)
       a_sym <- rlang::sym(cols$rel_abund)
 
-      n_samples_total <- dplyr::n_distinct(dplyr::pull(prepped, !!s_sym))
-
-      targets_keep <- prepped %>%
-        dplyr::ungroup() %>%
-        dplyr::group_by(!!t_sym) %>%
-        dplyr::summarise(sample_count = dplyr::n_distinct(!!s_sym), .groups = "drop") %>%
-        dplyr::mutate(sample_freq = sample_count / n_samples_total) %>%
-        dplyr::filter(sample_freq >= coverage_cutoff) %>%
-        dplyr::pull(!!t_sym) %>%
-        unique()
-      if (length(targets_keep) == 0) {
-        stop("No targets above the sample-coverage cutoff.", call. = FALSE)
+      if (!is.null(targets)) {
+        present <- unique(as.character(dplyr::pull(prepped, !!t_sym)))
+        targets_keep <- intersect(as.character(targets), present)
+        if (length(targets_keep) == 0) {
+          stop("None of the supplied `targets` are present in the data.",
+               call. = FALSE)
+        }
+      } else {
+        n_samples_total <- dplyr::n_distinct(dplyr::pull(prepped, !!s_sym))
+        targets_keep <- prepped %>%
+          dplyr::ungroup() %>%
+          dplyr::group_by(!!t_sym) %>%
+          dplyr::summarise(sample_count = dplyr::n_distinct(!!s_sym),
+                           .groups = "drop") %>%
+          dplyr::mutate(sample_freq = sample_count / n_samples_total) %>%
+          dplyr::filter(sample_freq >= coverage_cutoff) %>%
+          dplyr::pull(!!t_sym) %>%
+          unique()
+        if (length(targets_keep) == 0) {
+          stop("No targets above the sample-coverage cutoff.", call. = FALSE)
+        }
       }
 
       dat <- prepped %>% dplyr::filter(!!t_sym %in% targets_keep)
@@ -634,7 +876,8 @@ HaplotypeRainbow <- R6::R6Class(
 
       dat_sp_mat <- as.matrix(dat_sp[, 2:ncol(dat_sp)])
       rownames(dat_sp_mat) <- dplyr::pull(dat_sp, !!s_sym)
-      hc <- stats::hclust(stats::dist(dat_sp_mat), method = "ward.D2")
+      hc <- stats::hclust(stats::dist(dat_sp_mat, method = dist_method),
+                          method = hclust_method)
       sample_levels <- rownames(dat_sp_mat)[hc$order]
 
       missing_samples <- prepped %>%
@@ -645,8 +888,9 @@ HaplotypeRainbow <- R6::R6Class(
         unique()
 
       sample_levels <- c(as.character(sample_levels), missing_samples)
-      prepped %>%
+      reordered <- prepped %>%
         dplyr::mutate("{cols$sample}" := factor(!!s_sym, levels = sample_levels))
+      list(prepped = reordered, hclust = hc)
     },
 
     build_plot = function(style, fill_col, colors, x_axis_labels, y_axis_labels,
@@ -733,11 +977,20 @@ HaplotypeRainbow <- R6::R6Class(
           ggplot2::theme(axis.title.x = ggplot2::element_blank())
       }
 
-      # y-axis: same treatment.
+      # y-axis: same treatment. Blank any spacer levels (inter-cluster gaps), and
+      # optionally pad sample-name labels to a fixed width (mono font) so the panel
+      # aligns across separately-rendered plots.
       if (y_axis_labels) {
+        y_labs <- sample_levels
+        if (!is.null(private$spacer_levels)) {
+          y_labs[y_labs %in% private$spacer_levels] <- ""
+        }
+        if (!is.null(private$y_label_pad)) {
+          y_labs <- formatC(y_labs, width = private$y_label_pad)
+        }
         p <- p +
           ggplot2::scale_y_continuous(
-            labels = sample_levels,
+            labels = y_labs,
             breaks = seq_along(sample_levels),
             expand = c(0, 0)
           ) +
