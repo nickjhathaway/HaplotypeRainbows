@@ -8,6 +8,8 @@
 #' @importFrom stats hclust dist
 #' @importFrom tidyr pivot_wider
 #' @importFrom RColorBrewer brewer.pal
+#' @importFrom ggnewscale new_scale_fill
+#' @importFrom grDevices colorRampPalette cairo_pdf pdf dev.off col2rgb rgb2hsv
 ## usethis namespace: end
 NULL
 
@@ -23,7 +25,7 @@ utils::globalVariables(c(
   "fracCumSum", "fracModCumSum", "fakeFrac", "fakeFracMod",
   "fakeFracCumSum", "fakeFracModCumSum", "samp_n", "popid", "maxPopid",
   "popidFrac", "hueMod", "popidPerc", "popidFracRegColor",
-  "popidPercLog", "popidFracLogColor",
+  "popidPercLog", "popidFracLogColor", "is_invariant",
   # shade colouring columns
   "n", "total", "freq", "p_uniqHaps", "h_id", "h_id_freq", "h_id_freq_mod",
   "cumFreq", "modCumFreq", "p_color_ID", "p_hue", "p_baseColor",
