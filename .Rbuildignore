@@ -11,3 +11,4 @@
 ^pkgdown$
 ^\.gitignore$
 ^data-raw$
+^Rplots\.pdf$

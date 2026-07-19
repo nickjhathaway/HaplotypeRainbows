@@ -44,6 +44,9 @@ rb$plot()
     \item \href{#method-HaplotypeRainbow-add_target_annotation}{\code{HaplotypeRainbow$add_target_annotation()}}
     \item \href{#method-HaplotypeRainbow-dims}{\code{HaplotypeRainbow$dims()}}
     \item \href{#method-HaplotypeRainbow-save_pdf}{\code{HaplotypeRainbow$save_pdf()}}
+    \item \href{#method-HaplotypeRainbow-drop_legends}{\code{HaplotypeRainbow$drop_legends()}}
+    \item \href{#method-HaplotypeRainbow-extract_legend}{\code{HaplotypeRainbow$extract_legend()}}
+    \item \href{#method-HaplotypeRainbow-save_legend_pdf}{\code{HaplotypeRainbow$save_legend_pdf()}}
     \item \href{#method-HaplotypeRainbow-get_prepped}{\code{HaplotypeRainbow$get_prepped()}}
     \item \href{#method-HaplotypeRainbow-print}{\code{HaplotypeRainbow$print()}}
     \item \href{#method-HaplotypeRainbow-clone}{\code{HaplotypeRainbow$clone()}}
@@ -458,9 +461,12 @@ plot, using the metadata attached with \code{set_sample_meta()}.
   width = 1,
   height = 1,
   gap = 0,
+  plot_gap = 0,
   colors = NULL,
   na_color = "grey80",
   legend = TRUE,
+  legend_ncol = NULL,
+  legend_nrow = NULL,
   labels = TRUE,
   target_labels = TRUE,
   border = "black"
@@ -477,10 +483,15 @@ one band each, in order outward from the plot.}
       \item{\code{width}}{Band width in cell units (1 = one rainbow cell wide).}
       \item{\code{height}}{Band height as a fraction of a cell (1 = full cell, centred).}
       \item{\code{gap}}{Gap between bands in cell units (0 = flush).}
+      \item{\code{plot_gap}}{Gap in cell units between the rainbow cells and the first band
+(0 = flush against the plot).}
       \item{\code{colors}}{Optional named list (per column) of value -> colour to override
 the auto-assigned colours.}
       \item{\code{na_color}}{Fill for samples missing that metadata value.}
       \item{\code{legend}}{Draw a colour legend for each band.}
+      \item{\code{legend_ncol, legend_nrow}}{Number of columns / rows for the band legends,
+to keep tall legends on the page. A scalar applies to every band; a named
+vector (e.g. \code{c(country = 3)}) sets it per column.}
       \item{\code{labels}}{Draw the band (column-name) labels on the x-axis. Independent of
 \code{target_labels}, so band labels can stay on when target names are off.}
       \item{\code{target_labels}}{Keep the target names on the x-axis.}
@@ -508,9 +519,12 @@ rainbow plot, using the metadata attached with \code{set_target_meta()}.
   width = 1,
   height = 1,
   gap = 0,
+  plot_gap = 0,
   colors = NULL,
   na_color = "grey80",
   legend = TRUE,
+  legend_ncol = NULL,
+  legend_nrow = NULL,
   labels = TRUE,
   sample_labels = TRUE,
   border = "black"
@@ -527,10 +541,14 @@ one band each, stacked outward from the plot.}
       \item{\code{width}}{Band width as a fraction of a cell (1 = full cell, centred).}
       \item{\code{height}}{Band thickness in cell units (1 = one rainbow cell tall).}
       \item{\code{gap}}{Gap between bands in cell units (0 = flush).}
+      \item{\code{plot_gap}}{Gap in cell units between the rainbow cells and the first band
+(0 = flush against the plot).}
       \item{\code{colors}}{Optional named list (per column) of value -> colour to override
 the auto-assigned colours.}
       \item{\code{na_color}}{Fill for targets missing that metadata value.}
       \item{\code{legend}}{Draw a colour legend for each band.}
+      \item{\code{legend_ncol, legend_nrow}}{Number of columns / rows for the band legends.
+A scalar applies to every band; a named vector sets it per column.}
       \item{\code{labels}}{Draw the band (column-name) labels on the y-axis. Independent of
 \code{sample_labels}.}
       \item{\code{sample_labels}}{Keep the sample names on the y-axis.}
@@ -605,6 +623,88 @@ the base device (e.g. on Windows, where the cairo device can misbehave).
       \item{\code{file}}{Output file path.}
       \item{\code{width}}{Width in inches (default from \code{dims()}).}
       \item{\code{height}}{Height in inches (default from \code{dims()}).}
+      \item{\code{device}}{"cairo" (default) or "pdf".}
+      \item{\code{...}}{Passed to the graphics device.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    The file path, invisibly.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-drop_legends"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-drop_legends}{}}}
+\subsection{\code{HaplotypeRainbow$drop_legends()}}{
+  Return a copy of a plot with all legends removed. Combine with
+\code{save_legend_pdf()} to export the plot and its legend separately (e.g. to
+place the legend elsewhere in a figure).
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$drop_legends(p)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{p}}{A ggplot.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A \link[ggplot2:ggplot]{ggplot2::ggplot} object with \code{legend.position = "none"}.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-extract_legend"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-extract_legend}{}}}
+\subsection{\code{HaplotypeRainbow$extract_legend()}}{
+  Extract the legend (guide-box) of a plot as a grob, for composing
+it elsewhere (e.g. with patchwork / cowplot / grid).
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$extract_legend(p)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{p}}{A ggplot.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A grid grob (gtable).
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-save_legend_pdf"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-save_legend_pdf}{}}}
+\subsection{\code{HaplotypeRainbow$save_legend_pdf()}}{
+  Save just the legend of a plot to PDF (so it can be combined in
+post with the plot exported via \code{save_pdf(drop_legends(p), ...)}).
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$save_legend_pdf(
+  p,
+  file,
+  width = 6,
+  height = 8,
+  device = c("cairo", "pdf"),
+  ...
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{p}}{A ggplot.}
+      \item{\code{file}}{Output file path.}
+      \item{\code{width}}{Width in inches.}
+      \item{\code{height}}{Height in inches.}
       \item{\code{device}}{"cairo" (default) or "pdf".}
       \item{\code{...}}{Passed to the graphics device.}
     }

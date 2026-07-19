@@ -237,6 +237,30 @@ Colours are auto-assigned from the colour-blind-friendly palettes; override any 
 with a named vector via `colors`. Turn legends off with `legend = FALSE`, or place the
 sidebar on the right with `side = "right"`.
 
+Use `plot_gap` to separate the bands from the cells, and `legend_ncol` / `legend_nrow`
+(a scalar for all bands, or a named vector per column) to keep big legends on the page:
+
+```{r sidebar-tweaks, eval = FALSE}
+rb$add_sample_metadata(
+  p, cols = c("region", "country"),
+  plot_gap    = 2,                        # separate the sidebar from the rainbow
+  legend_ncol = c(country = 4, region = 2)
+)
+```
+
+### Exporting the legend separately
+
+When legends are large you may want the plot and its legend as separate PDFs, to
+recombine in a figure. `save_legend_pdf()` writes just the legend; `drop_legends()`
+returns the plot without it. `extract_legend()` returns the legend grob for use with
+patchwork / cowplot / grid.
+
+```{r legend-export, eval = FALSE}
+rb$save_legend_pdf(p, "legend.pdf")             # the legend only
+rb$save_pdf(rb$drop_legends(p), "plot.pdf")     # the plot without its legend
+legend_grob <- rb$extract_legend(p)             # or compose it yourself
+```
+
 ### The target annotation strip
 
 `add_target_annotation()` is the transpose: coloured bands above (or below) the rainbow,

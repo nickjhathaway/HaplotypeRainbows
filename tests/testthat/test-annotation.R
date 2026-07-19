@@ -88,3 +88,48 @@ test_that("colors override is applied", {
   )
   expect_s3_class(p2, "ggplot")
 })
+
+test_that("plot_gap and legend column control are accepted", {
+  rb <- prepped_rb()
+  p <- suppressWarnings(rb$plot())
+  expect_s3_class(
+    suppressWarnings(rb$add_sample_metadata(
+      p, cols = c("country", "region"), plot_gap = 2,
+      legend_ncol = c(country = 4, region = 2)
+    )),
+    "ggplot"
+  )
+  expect_s3_class(
+    suppressWarnings(rb$add_target_annotation(
+      p, cols = "class", plot_gap = 1, legend_nrow = 1
+    )),
+    "ggplot"
+  )
+})
+
+test_that(".per_col resolves NULL/scalar/named/positional", {
+  expect_equal(HaplotypeRainbows:::.per_col(NULL, c("a", "b")),
+               list(a = NULL, b = NULL))
+  expect_equal(HaplotypeRainbows:::.per_col(3, c("a", "b")),
+               list(a = 3, b = 3))
+  expect_equal(HaplotypeRainbows:::.per_col(c(a = 2), c("a", "b")),
+               list(a = 2, b = NULL))
+  expect_equal(HaplotypeRainbows:::.per_col(c(5, 6), c("a", "b")),
+               list(a = 5, b = 6))
+})
+
+test_that("legend export: extract_legend, save_legend_pdf, drop_legends", {
+  rb <- prepped_rb()
+  p <- suppressWarnings(rb$add_sample_metadata(suppressWarnings(rb$plot()),
+                                               cols = "region"))
+  expect_s3_class(rb$extract_legend(p), "gtable")
+
+  f <- tempfile(fileext = ".pdf")
+  suppressWarnings(rb$save_legend_pdf(p, f, device = "pdf", width = 5, height = 6))
+  expect_true(file.exists(f))
+  expect_gt(file.info(f)$size, 0)
+
+  nl <- rb$drop_legends(p)
+  expect_s3_class(nl, "ggplot")
+  expect_identical(nl$theme$legend.position, "none")
+})

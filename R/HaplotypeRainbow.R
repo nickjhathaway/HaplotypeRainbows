@@ -286,18 +286,24 @@ HaplotypeRainbow <- R6::R6Class(
     #' @param width Band width in cell units (1 = one rainbow cell wide).
     #' @param height Band height as a fraction of a cell (1 = full cell, centred).
     #' @param gap Gap between bands in cell units (0 = flush).
+    #' @param plot_gap Gap in cell units between the rainbow cells and the first band
+    #'   (0 = flush against the plot).
     #' @param colors Optional named list (per column) of value -> colour to override
     #'   the auto-assigned colours.
     #' @param na_color Fill for samples missing that metadata value.
     #' @param legend Draw a colour legend for each band.
+    #' @param legend_ncol,legend_nrow Number of columns / rows for the band legends,
+    #'   to keep tall legends on the page. A scalar applies to every band; a named
+    #'   vector (e.g. `c(country = 3)`) sets it per column.
     #' @param labels Draw the band (column-name) labels on the x-axis. Independent of
     #'   `target_labels`, so band labels can stay on when target names are off.
     #' @param target_labels Keep the target names on the x-axis.
     #' @param border Border colour for the band rectangles.
     #' @return A [ggplot2::ggplot] object.
     add_sample_metadata = function(p, cols = NULL, side = "left", width = 1,
-                                   height = 1, gap = 0, colors = NULL,
+                                   height = 1, gap = 0, plot_gap = 0, colors = NULL,
                                    na_color = "grey80", legend = TRUE,
+                                   legend_ncol = NULL, legend_nrow = NULL,
                                    labels = TRUE, target_labels = TRUE,
                                    border = "black") {
       private$require_prepped()
@@ -306,8 +312,8 @@ HaplotypeRainbow <- R6::R6Class(
       }
       .add_sample_metadata(p, private$prepped, private$sample_meta,
                            private$cols$sample, private$cols$target, cols, side,
-                           width, height, gap, colors, na_color, legend, labels,
-                           target_labels, border)
+                           width, height, gap, plot_gap, colors, na_color, legend,
+                           legend_ncol, legend_nrow, labels, target_labels, border)
     },
 
     #' @description Add a per-target annotation strip (coloured bands) above or below a
@@ -319,18 +325,23 @@ HaplotypeRainbow <- R6::R6Class(
     #' @param width Band width as a fraction of a cell (1 = full cell, centred).
     #' @param height Band thickness in cell units (1 = one rainbow cell tall).
     #' @param gap Gap between bands in cell units (0 = flush).
+    #' @param plot_gap Gap in cell units between the rainbow cells and the first band
+    #'   (0 = flush against the plot).
     #' @param colors Optional named list (per column) of value -> colour to override
     #'   the auto-assigned colours.
     #' @param na_color Fill for targets missing that metadata value.
     #' @param legend Draw a colour legend for each band.
+    #' @param legend_ncol,legend_nrow Number of columns / rows for the band legends.
+    #'   A scalar applies to every band; a named vector sets it per column.
     #' @param labels Draw the band (column-name) labels on the y-axis. Independent of
     #'   `sample_labels`.
     #' @param sample_labels Keep the sample names on the y-axis.
     #' @param border Border colour for the band rectangles.
     #' @return A [ggplot2::ggplot] object.
     add_target_annotation = function(p, cols = NULL, position = "top", width = 1,
-                                     height = 1, gap = 0, colors = NULL,
+                                     height = 1, gap = 0, plot_gap = 0, colors = NULL,
                                      na_color = "grey80", legend = TRUE,
+                                     legend_ncol = NULL, legend_nrow = NULL,
                                      labels = TRUE, sample_labels = TRUE,
                                      border = "black") {
       private$require_prepped()
@@ -339,8 +350,8 @@ HaplotypeRainbow <- R6::R6Class(
       }
       .add_target_annotation(p, private$prepped, private$target_meta,
                              private$cols$sample, private$cols$target, cols, position,
-                             width, height, gap, colors, na_color, legend, labels,
-                             sample_labels, border)
+                             width, height, gap, plot_gap, colors, na_color, legend,
+                             legend_ncol, legend_nrow, labels, sample_labels, border)
     },
 
     #' @description Suggested figure dimensions (inches) for the current data, scaling
@@ -392,6 +403,48 @@ HaplotypeRainbow <- R6::R6Class(
       }
       on.exit(grDevices::dev.off())
       print(p)
+      invisible(file)
+    },
+
+    #' @description Return a copy of a plot with all legends removed. Combine with
+    #'   `save_legend_pdf()` to export the plot and its legend separately (e.g. to
+    #'   place the legend elsewhere in a figure).
+    #' @param p A ggplot.
+    #' @return A [ggplot2::ggplot] object with `legend.position = "none"`.
+    drop_legends = function(p) {
+      p + ggplot2::theme(legend.position = "none")
+    },
+
+    #' @description Extract the legend (guide-box) of a plot as a grob, for composing
+    #'   it elsewhere (e.g. with patchwork / cowplot / grid).
+    #' @param p A ggplot.
+    #' @return A grid grob (gtable).
+    extract_legend = function(p) {
+      .extract_legend_grob(p)
+    },
+
+    #' @description Save just the legend of a plot to PDF (so it can be combined in
+    #'   post with the plot exported via `save_pdf(drop_legends(p), ...)`).
+    #' @param p A ggplot.
+    #' @param file Output file path.
+    #' @param width Width in inches.
+    #' @param height Height in inches.
+    #' @param device "cairo" (default) or "pdf".
+    #' @param ... Passed to the graphics device.
+    #' @return The file path, invisibly.
+    save_legend_pdf = function(p, file, width = 6, height = 8,
+                               device = c("cairo", "pdf"), ...) {
+      device <- match.arg(device)
+      legend <- .extract_legend_grob(p)
+      if (device == "cairo") {
+        grDevices::cairo_pdf(file, width = width, height = height, ...)
+      } else {
+        grDevices::pdf(file, width = width, height = height,
+                       useDingbats = FALSE, ...)
+      }
+      on.exit(grDevices::dev.off())
+      grid::grid.newpage()
+      grid::grid.draw(legend)
       invisible(file)
     },
 
