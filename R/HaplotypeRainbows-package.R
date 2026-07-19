@@ -5,7 +5,7 @@
 #' @importFrom dplyr %>%
 #' @importFrom rlang := sym
 #' @importFrom R6 R6Class
-#' @importFrom stats hclust dist
+#' @importFrom stats hclust dist cutree as.dendrogram
 #' @importFrom tidyr pivot_wider
 #' @importFrom RColorBrewer brewer.pal
 #' @importFrom ggnewscale new_scale_fill

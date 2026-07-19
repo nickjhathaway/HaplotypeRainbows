@@ -29,6 +29,9 @@ rb$plot()
     \item \href{#method-HaplotypeRainbow-prep}{\code{HaplotypeRainbow$prep()}}
     \item \href{#method-HaplotypeRainbow-prep_shade}{\code{HaplotypeRainbow$prep_shade()}}
     \item \href{#method-HaplotypeRainbow-sort_by_clustering}{\code{HaplotypeRainbow$sort_by_clustering()}}
+    \item \href{#method-HaplotypeRainbow-get_hclust}{\code{HaplotypeRainbow$get_hclust()}}
+    \item \href{#method-HaplotypeRainbow-get_dendrogram}{\code{HaplotypeRainbow$get_dendrogram()}}
+    \item \href{#method-HaplotypeRainbow-cluster_groups}{\code{HaplotypeRainbow$cluster_groups()}}
     \item \href{#method-HaplotypeRainbow-set_sample_order}{\code{HaplotypeRainbow$set_sample_order()}}
     \item \href{#method-HaplotypeRainbow-sort_alphabetical}{\code{HaplotypeRainbow$sort_alphabetical()}}
     \item \href{#method-HaplotypeRainbow-set_sample_meta}{\code{HaplotypeRainbow$set_sample_meta()}}
@@ -47,6 +50,8 @@ rb$plot()
     \item \href{#method-HaplotypeRainbow-drop_legends}{\code{HaplotypeRainbow$drop_legends()}}
     \item \href{#method-HaplotypeRainbow-extract_legend}{\code{HaplotypeRainbow$extract_legend()}}
     \item \href{#method-HaplotypeRainbow-save_legend_pdf}{\code{HaplotypeRainbow$save_legend_pdf()}}
+    \item \href{#method-HaplotypeRainbow-export_groups_pdf}{\code{HaplotypeRainbow$export_groups_pdf()}}
+    \item \href{#method-HaplotypeRainbow-add_cluster_bands}{\code{HaplotypeRainbow$add_cluster_bands()}}
     \item \href{#method-HaplotypeRainbow-get_prepped}{\code{HaplotypeRainbow$get_prepped()}}
     \item \href{#method-HaplotypeRainbow-print}{\code{HaplotypeRainbow$print()}}
     \item \href{#method-HaplotypeRainbow-clone}{\code{HaplotypeRainbow$clone()}}
@@ -151,12 +156,16 @@ base colour instead of a rotating rainbow). Stores the prepped table internally.
 \if{latex}{\out{\hypertarget{method-HaplotypeRainbow-sort_by_clustering}{}}}
 \subsection{\code{HaplotypeRainbow$sort_by_clustering()}}{
   Reorder samples so that similar samples (by haplotype sharing) sit
-next to each other, via hierarchical clustering (ward.D2).
+next to each other, via hierarchical clustering. The fitted \code{hclust} object is
+stored (see \code{get_hclust()} / \code{get_dendrogram()} / \code{cluster_groups()}).
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{HaplotypeRainbow$sort_by_clustering(
   by_major_allele = FALSE,
-  coverage_cutoff = 0.8
+  coverage_cutoff = 0.8,
+  targets = NULL,
+  dist_method = "euclidean",
+  hclust_method = "ward.D2"
 )}
     \if{html}{\out{</div>}}
   }
@@ -165,12 +174,70 @@ next to each other, via hierarchical clustering (ward.D2).
     \describe{
       \item{\code{by_major_allele}}{Cluster on only the major haplotype per (sample, target).}
       \item{\code{coverage_cutoff}}{Keep only targets present in at least this fraction of
-samples for the clustering.}
+samples for the clustering (ignored when \code{targets} is supplied).}
+      \item{\code{targets}}{Optional character vector of target names to cluster on; when
+given, only these targets are used (instead of the coverage-based selection).}
+      \item{\code{dist_method}}{Distance method passed to \code{\link[stats:dist]{stats::dist()}}.}
+      \item{\code{hclust_method}}{Linkage method passed to \code{\link[stats:hclust]{stats::hclust()}}.}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
     The object, invisibly (chainable).
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-get_hclust"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-get_hclust}{}}}
+\subsection{\code{HaplotypeRainbow$get_hclust()}}{
+  Return the \code{hclust} object from the last \code{sort_by_clustering()}.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$get_hclust()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    An \link[stats:hclust]{stats::hclust} object.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-get_dendrogram"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-get_dendrogram}{}}}
+\subsection{\code{HaplotypeRainbow$get_dendrogram()}}{
+  Return the clustering as a dendrogram.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$get_dendrogram()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A \link[stats:dendrogram]{stats::dendrogram}.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-cluster_groups"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-cluster_groups}{}}}
+\subsection{\code{HaplotypeRainbow$cluster_groups()}}{
+  Cut the stored clustering into groups (by number of groups \code{k} or
+height \code{h}). Groups are relabelled 1, 2, ... in dendrogram order.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$cluster_groups(k = NULL, h = NULL)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{k}}{Desired number of groups.}
+      \item{\code{h}}{Height at which to cut the tree.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A tibble with the sample column and a \code{cluster} factor.
   }
 }
 
@@ -736,6 +803,96 @@ so it is not clipped.
   }
   \subsection{Returns}{
     The file path, invisibly.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-export_groups_pdf"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-export_groups_pdf}{}}}
+\subsection{\code{HaplotypeRainbow$export_groups_pdf()}}{
+  Export one plot per group (cluster or sample-metadata value) to
+PDF, auto-sizing each plot to its own sample count. By default the per-group
+pages are combined into a single multi-page PDF (with correctly-sized pages)
+using the \pkg{qpdf} package.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$export_groups_pdf(
+  file,
+  plot_fun,
+  by = c("cluster", "meta"),
+  k = NULL,
+  h = NULL,
+  meta_col = NULL,
+  device = c("cairo", "pdf"),
+  combine = TRUE,
+  size_include_legend = FALSE,
+  bg = "transparent",
+  ...
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{file}}{Output PDF path (or, with \code{combine = FALSE}, a template whose
+\code{.pdf} is suffixed with each group label).}
+      \item{\code{plot_fun}}{A function of one argument: it receives a per-group
+HaplotypeRainbow (with the prepped data filtered to that group) and returns a
+ggplot. e.g. \code{function(sub) sub$plot()}.}
+      \item{\code{by}}{Group by "cluster" (needs a prior \code{sort_by_clustering()} and \code{k}/\code{h})
+or "meta" (needs \code{set_sample_meta()} and \code{meta_col}).}
+      \item{\code{k, h}}{Cluster cut (when \code{by = "cluster"}).}
+      \item{\code{meta_col}}{Sample-metadata column to group by (when \code{by = "meta"}).}
+      \item{\code{device}}{"cairo" (default) or "pdf".}
+      \item{\code{combine}}{Combine the per-group pages into one PDF (needs \pkg{qpdf});
+if \code{FALSE}, write a separate file per group.}
+      \item{\code{size_include_legend}}{Passed to \code{dims()} for per-group sizing.}
+      \item{\code{bg}}{Device background colour (default "transparent").}
+      \item{\code{...}}{Passed to the graphics device.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    The output path(s), invisibly.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-add_cluster_bands"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-add_cluster_bands}{}}}
+\subsection{\code{HaplotypeRainbow$add_cluster_bands()}}{
+  Overlay alternating translucent background bands, one per cluster
+group, spanning the plot width — a quick way to show clusters on a single plot.
+Requires a prior \code{sort_by_clustering()}.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$add_cluster_bands(
+  p,
+  k = NULL,
+  h = NULL,
+  colors = c("#00000025", "#AAAAAA25"),
+  extend_left = 0,
+  extend_right = 0,
+  border = NA
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{p}}{A ggplot returned by \code{plot()}.}
+      \item{\code{k}}{Number of cluster groups (passed to \code{cluster_groups()}).}
+      \item{\code{h}}{Height at which to cut the tree (alternative to \code{k}).}
+      \item{\code{colors}}{Colours to alternate between (translucent by default so the
+rainbow shows through).}
+      \item{\code{extend_left, extend_right}}{Extend the bands (in cell units) to cover a
+sidebar or annotation strip.}
+      \item{\code{border}}{Border colour for the bands (default none).}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A \link[ggplot2:ggplot]{ggplot2::ggplot} object.
   }
 }
 
