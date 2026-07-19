@@ -1,6 +1,6 @@
 Package: HaplotypeRainbows
 Title: Creates Haplotype Rainbow Plots
-Version: 2.0.0
+Version: 2.0.1
 Authors@R:
     person(given = "Nicholas",
            family = "Hathaway",
@@ -46,6 +46,6 @@ Suggests:
 Config/testthat/edition: 3
 Config/Needs/website: pkgdown
 URL: https://github.com/nickjhathaway/HaplotypeRainbows,
-    https://nickjhathaway.github.io/HaplotypeRainbows
+    https://nickjhathaway.github.io/HaplotypeRainbows/
 BugReports: https://github.com/nickjhathaway/HaplotypeRainbows/issues
 Config/roxygen2/version: 8.0.0

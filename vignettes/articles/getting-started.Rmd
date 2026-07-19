@@ -108,8 +108,19 @@ rb$plot(x_axis_labels = FALSE, y_axis_labels = FALSE) # hide both
 ## Accessing the prepped data
 
 `get_prepped()` returns the prepped table if you want to post-process the plot yourself or
-inspect the derived columns:
+inspect the derived columns. It uses canonical column names — `sample`, `target`, `hapid`
+and `rel_abund` (raw counts), plus `within_sample_freq` / `total_abund` and the derived
+geometry/colour columns — regardless of your input column names:
 
 ```{r get-prepped}
 head(rb$get_prepped())
+```
+
+To reconnect the prepped table to your source data, relabel those four columns back to your
+original names with `get_prepped(original_names = TRUE)`, or look up the mapping directly
+with `column_map()`:
+
+```{r get-prepped-original, eval = FALSE}
+rb$column_map()                     # canonical -> your original column names
+head(rb$get_prepped(original_names = TRUE))
 ```

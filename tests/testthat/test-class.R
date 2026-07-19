@@ -70,7 +70,7 @@ test_that("rank_colors requires a rainbow prep, not shade", {
 
 test_that("rank colours interpolate a ramp when ranks exceed the palette", {
   rb <- new_rb()$prep(sort = "population_rank")
-  n <- max(rb$get_prepped()$popid)
+  n <- max(rb$get_prepped()$pop_id)
   small <- colorPalette_08[1:3]
   # more ranks than the 3-colour palette -> ramp + warning (muffle the unrelated
   # ggplot "unknown aesthetics" warning so only the ramp warning is asserted)
@@ -102,7 +102,7 @@ test_that("set_sample_order puts requested samples first", {
   rb <- new_rb()$prep(sort = "population_rank")
   wanted <- c("3D7", "HB3")
   rb$set_sample_order(wanted)
-  expect_identical(head(levels(rb$get_prepped()$s_Sample), 2), wanted)
+  expect_identical(head(levels(rb$get_prepped()$sample), 2), wanted)
 })
 
 test_that("haplotype_rainbow() wrapper builds the same class", {

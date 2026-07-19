@@ -44,6 +44,11 @@ HaplotypeRainbow <- R6::R6Class(
       }
       private$data <- data
       private$cols <- cols
+      # key mapping the canonical internal column names (used in the prepped table) back
+      # to the user's original column names, so prepped data can be relabelled and
+      # rejoined to the source input (see $column_map() / $get_prepped(original_names)).
+      private$col_map <- c(sample = sample_col, target = target_col,
+                           hapid = popuid_col, rel_abund = rel_abund_col)
       invisible(self)
     },
 
@@ -68,7 +73,7 @@ HaplotypeRainbow <- R6::R6Class(
       )
       if (isTRUE(mark_invariant)) {
         private$prepped <- private$prepped %>%
-          dplyr::mutate(is_invariant = maxPopid == 1)
+          dplyr::mutate(is_invariant = max_pop_id == 1)
       }
       private$sort_mode <- sort
       private$color_period <- color_period
@@ -146,9 +151,10 @@ HaplotypeRainbow <- R6::R6Class(
       ordered_samples <- hc$labels[hc$order]
       grp_in_order <- cg[ordered_samples]
       new_id <- match(grp_in_order, unique(grp_in_order))
-      sc <- private$cols$sample
+      # prepped uses the canonical "sample" column; emit the groups keyed the same so
+      # downstream helpers (group_samples, add_cluster_*) join without a remap.
       tibble::tibble(
-        "{sc}" := ordered_samples,
+        sample = ordered_samples,
         cluster = factor(new_id, levels = unique(new_id))
       )
     },
@@ -158,7 +164,7 @@ HaplotypeRainbow <- R6::R6Class(
     #' @return The object, invisibly (chainable).
     set_sample_order = function(levels) {
       private$require_prepped()
-      sc <- private$cols$sample
+      sc <- "sample"
       present <- as.character(unique(dplyr::pull(private$prepped, dplyr::all_of(sc))))
       missing <- setdiff(present, as.character(levels))
       ordered <- c(as.character(levels), missing)
@@ -171,7 +177,7 @@ HaplotypeRainbow <- R6::R6Class(
     #' @return The object, invisibly (chainable).
     sort_alphabetical = function() {
       private$require_prepped()
-      sc <- private$cols$sample
+      sc <- "sample"
       lv <- sort(as.character(unique(dplyr::pull(private$prepped, dplyr::all_of(sc)))))
       private$prepped <- private$prepped %>%
         dplyr::mutate("{sc}" := factor(.data[[sc]], levels = lv))
@@ -237,7 +243,7 @@ HaplotypeRainbow <- R6::R6Class(
     #' @return The object, invisibly (chainable).
     set_target_order = function(levels) {
       private$require_prepped()
-      tc <- private$cols$target
+      tc <- "target"
       present <- levels(factor(dplyr::pull(private$prepped, dplyr::all_of(tc))))
       ordered <- c(as.character(levels),
                    setdiff(present, as.character(levels)))
@@ -252,7 +258,7 @@ HaplotypeRainbow <- R6::R6Class(
     #'   `sort = "shade"`, otherwise "rainbow".
     #' @param colors Colour ramp for rainbow style. Length should match `color_period`.
     #' @param color_col Column to map to fill for rainbow style
-    #'   ("popidFracLogColor" or "popidFracRegColor").
+    #'   ("pop_id_frac_log_color" or "pop_id_frac_reg_color").
     #' @param shade_col Identity-colour column for shade style.
     #' @param rank_colors Colour haplotypes by a discrete rank (with a legend) instead
     #'   of the continuous rainbow gradient. When there are more ranks than palette
@@ -268,8 +274,8 @@ HaplotypeRainbow <- R6::R6Class(
     #' @return A [ggplot2::ggplot] object.
     plot = function(style = NULL,
                     colors = RColorBrewer::brewer.pal(11, "Spectral"),
-                    color_col = "popidFracLogColor",
-                    shade_col = "h_color_byFreq_mod",
+                    color_col = "pop_id_frac_log_color",
+                    shade_col = "h_color_by_freq_mod",
                     rank_colors = FALSE,
                     rank_palette = colorPalette_12,
                     invariant_color = "#000000",
@@ -312,8 +318,8 @@ HaplotypeRainbow <- R6::R6Class(
                                invariant_color = "#000000") {
       if (is.null(n_ranks)) {
         n_ranks <- if (!is.null(private$prepped) &&
-                       "popid" %in% names(private$prepped)) {
-          max(private$prepped[["popid"]], na.rm = TRUE)
+                       "pop_id" %in% names(private$prepped)) {
+          max(private$prepped[["pop_id"]], na.rm = TRUE)
         } else {
           length(rank_palette)
         }
@@ -360,7 +366,7 @@ HaplotypeRainbow <- R6::R6Class(
         stop("No sample metadata set; call $set_sample_meta() first.", call. = FALSE)
       }
       .add_sample_metadata(p, private$prepped, private$sample_meta,
-                           private$cols$sample, private$cols$target, cols, side,
+                           "sample", "target", cols, side,
                            width, height, gap, plot_gap, colors, na_color, legend,
                            legend_ncol, legend_nrow, level_order, labels,
                            target_labels, border)
@@ -401,7 +407,7 @@ HaplotypeRainbow <- R6::R6Class(
         stop("No target metadata set; call $set_target_meta() first.", call. = FALSE)
       }
       .add_target_annotation(p, private$prepped, private$target_meta,
-                             private$cols$sample, private$cols$target, cols, position,
+                             "sample", "target", cols, position,
                              width, height, gap, plot_gap, colors, na_color, legend,
                              legend_ncol, legend_nrow, level_order, labels,
                              sample_labels, border)
@@ -425,11 +431,11 @@ HaplotypeRainbow <- R6::R6Class(
                     size_include_legend = FALSE) {
       private$require_prepped()
       n_t <- dplyr::n_distinct(
-        dplyr::pull(private$prepped, dplyr::all_of(private$cols$target))
+        dplyr::pull(private$prepped, dplyr::all_of("target"))
       )
       # count sample factor levels (not distinct values) so inter-cluster spacer
       # rows are included in the height.
-      scol <- dplyr::pull(private$prepped, dplyr::all_of(private$cols$sample))
+      scol <- dplyr::pull(private$prepped, dplyr::all_of("sample"))
       n_s <- if (is.factor(scol)) nlevels(scol) else dplyr::n_distinct(scol)
       w <- max(min_width,  n_t * cell_width)  + extra_width
       h <- max(min_height, n_s * cell_height) + extra_height
@@ -572,7 +578,7 @@ HaplotypeRainbow <- R6::R6Class(
 
       pad <- if (isTRUE(align_targets)) {
         max(nchar(unique(as.character(
-          dplyr::pull(private$prepped, dplyr::all_of(private$cols$sample))
+          dplyr::pull(private$prepped, dplyr::all_of("sample"))
         ))))
       } else {
         NULL
@@ -618,7 +624,7 @@ HaplotypeRainbow <- R6::R6Class(
     #' @return The object, invisibly (chainable).
     add_cluster_gaps = function(k = NULL, h = NULL, gap = 1) {
       private$require_prepped()
-      sc <- private$cols$sample
+      sc <- "sample"
       cg <- self$cluster_groups(k = k, h = h)
       clu <- stats::setNames(as.character(cg$cluster), as.character(cg[[sc]]))
       cur <- setdiff(levels(factor(dplyr::pull(private$prepped, dplyr::all_of(sc)))),
@@ -669,14 +675,33 @@ HaplotypeRainbow <- R6::R6Class(
                                  border = NA) {
       private$require_prepped()
       groups <- self$cluster_groups(k = k, h = h)
-      .add_cluster_bands(p, private$prepped, private$cols$sample,
-                         private$cols$target, groups, colors,
+      .add_cluster_bands(p, private$prepped, "sample",
+                         "target", groups, colors,
                          extend_left, extend_right, expand, border)
     },
 
     #' @description Return the prepped data frame (or `NULL` if `prep()` not yet called).
+    #'   The prepped table uses canonical column names (`sample`, `target`, `hapid`,
+    #'   `rel_abund`); set `original_names = TRUE` to relabel those four back to the
+    #'   column names supplied for the input data, so the result can be rejoined to the
+    #'   source data (see `$column_map()`).
+    #' @param original_names Relabel the canonical columns back to the user's originals.
     #' @return A data frame.
-    get_prepped = function() private$prepped,
+    get_prepped = function(original_names = FALSE) {
+      if (is.null(private$prepped)) return(NULL)
+      if (isTRUE(original_names)) {
+        private$rename_to_original(private$prepped)
+      } else {
+        private$prepped
+      }
+    },
+
+    #' @description Return the key mapping the canonical internal column names
+    #'   (`sample`, `target`, `hapid`, `rel_abund`) used in the prepped table to the
+    #'   original column names supplied for the input data. Use it to relabel prepped
+    #'   data and reconnect it to the source input.
+    #' @return A named character vector (names = canonical, values = original).
+    column_map = function() private$col_map,
 
     #' @description Print a short summary.
     #' @param ... Ignored.
@@ -700,6 +725,7 @@ HaplotypeRainbow <- R6::R6Class(
   private = list(
     data = NULL,
     cols = NULL,
+    col_map = NULL,
     prepped = NULL,
     sort_mode = NULL,
     color_period = 11,
@@ -715,9 +741,20 @@ HaplotypeRainbow <- R6::R6Class(
       }
     },
 
+    # Relabel the canonical columns present in `df` back to the user's original input
+    # names, using the stored key. Only renames the canonical columns that are present.
+    rename_to_original = function(df) {
+      present <- intersect(names(private$col_map), names(df))
+      if (length(present)) {
+        idx <- match(present, names(df))
+        names(df)[idx] <- unname(private$col_map[present])
+      }
+      df
+    },
+
     # Split the (currently present) samples into named groups by cluster or metadata.
     group_samples = function(by, k, h, meta_col) {
-      sc <- private$cols$sample
+      sc <- "sample"
       present <- unique(as.character(dplyr::pull(private$prepped, dplyr::all_of(sc))))
       if (by == "cluster") {
         cg <- self$cluster_groups(k = k, h = h)
@@ -743,7 +780,7 @@ HaplotypeRainbow <- R6::R6Class(
     subset_clone = function(keep) {
       sub <- self$clone(deep = TRUE)
       priv <- sub$.__enclos_env__$private
-      sc <- priv$cols$sample
+      sc <- "sample"
       keep <- as.character(keep)
       cur <- levels(factor(dplyr::pull(priv$prepped, dplyr::all_of(sc))))
       new_levels <- cur[cur %in% keep]
@@ -759,7 +796,10 @@ HaplotypeRainbow <- R6::R6Class(
     # are uniform. Errors on missing columns; warns + NA-fills entities absent from meta.
     set_meta = function(kind, meta, match_col, cols, add) {
       stopifnot(is.data.frame(meta))
-      key_out <- if (kind == "sample") private$cols$sample else private$cols$target
+      # metadata is keyed by the canonical name so it joins the (canonical) prepped
+      # table; the raw input data is still read by the user's original column name.
+      key_out <- if (kind == "sample") "sample" else "target"
+      key_data <- if (kind == "sample") private$cols$sample else private$cols$target
       if (!match_col %in% names(meta)) {
         stop("match_col '", match_col, "' not found in the metadata table.",
              call. = FALSE)
@@ -776,7 +816,7 @@ HaplotypeRainbow <- R6::R6Class(
       new_meta <- new_meta[!duplicated(new_meta[[key_out]]), , drop = FALSE]
 
       data_ids <- unique(as.character(
-        dplyr::pull(private$data, dplyr::all_of(key_out))
+        dplyr::pull(private$data, dplyr::all_of(key_data))
       ))
       missing_ids <- setdiff(data_ids, new_meta[[key_out]])
       if (length(missing_ids)) {
@@ -804,7 +844,7 @@ HaplotypeRainbow <- R6::R6Class(
         stop("No ", kind, " metadata set; call $set_", kind, "_meta() first.",
              call. = FALSE)
       }
-      key <- if (kind == "sample") private$cols$sample else private$cols$target
+      key <- if (kind == "sample") "sample" else "target"
       bad <- setdiff(cols, setdiff(names(meta), key))
       if (length(bad)) {
         stop(kind, " metadata column(s) not found: ",
@@ -829,10 +869,11 @@ HaplotypeRainbow <- R6::R6Class(
     # reordered data and the fitted hclust object.
     resort_clustering = function(prepped, cols, coverage_cutoff, by_major_allele,
                                  targets, dist_method, hclust_method) {
-      s_sym <- rlang::sym(cols$sample)
-      t_sym <- rlang::sym(cols$target)
-      h_sym <- rlang::sym(cols$popuid)
-      a_sym <- rlang::sym(cols$rel_abund)
+      # operates on the prepped table, which uses canonical column names
+      s_sym <- rlang::sym("sample")
+      t_sym <- rlang::sym("target")
+      h_sym <- rlang::sym("hapid")
+      a_sym <- rlang::sym("rel_abund")
 
       if (!is.null(targets)) {
         present <- unique(as.character(dplyr::pull(prepped, !!t_sym)))
@@ -889,17 +930,17 @@ HaplotypeRainbow <- R6::R6Class(
 
       sample_levels <- c(as.character(sample_levels), missing_samples)
       reordered <- prepped %>%
-        dplyr::mutate("{cols$sample}" := factor(!!s_sym, levels = sample_levels))
+        dplyr::mutate(sample = factor(!!s_sym, levels = sample_levels))
       list(prepped = reordered, hclust = hc)
     },
 
     build_plot = function(style, fill_col, colors, x_axis_labels, y_axis_labels,
                           rank = NULL) {
       prep_data <- private$prepped
-      sc <- private$cols$sample
-      tc <- private$cols$target
-      hc <- private$cols$popuid
-      ac <- private$cols$rel_abund
+      # the prepped table uses canonical column names
+      sc <- "sample"
+      tc <- "target"
+      hc <- "hapid"
 
       # discrete rank colouring: one colour per haplotype rank (interpolating a ramp
       # from the palette when there are more ranks than colours), plus (if marked) a
@@ -907,14 +948,14 @@ HaplotypeRainbow <- R6::R6Class(
       if (!is.null(rank)) {
         has_inv <- "is_invariant" %in% names(prep_data) &&
           any(prep_data[["is_invariant"]], na.rm = TRUE)
-        n_rank <- max(prep_data[["popid"]], na.rm = TRUE)
+        n_rank <- max(prep_data[["pop_id"]], na.rm = TRUE)
         if (n_rank > length(rank$palette)) {
           warning("More haplotype ranks (", n_rank, ") than palette colours (",
                   length(rank$palette),
                   "); interpolating a colour ramp from the palette.", call. = FALSE)
         }
         rank$palette <- .expand_rank_palette(rank$palette, n_rank)
-        rank_chr <- as.character(prep_data[["popid"]])
+        rank_chr <- as.character(prep_data[["pop_id"]])
         if (has_inv) rank_chr[which(prep_data[["is_invariant"]])] <- "invariant"
         lev <- c(as.character(seq_len(n_rank)), if (has_inv) "invariant")
         prep_data[[".rank"]] <- factor(rank_chr, levels = lev)
@@ -924,15 +965,16 @@ HaplotypeRainbow <- R6::R6Class(
       # extra (non-standard) aesthetics carried through so ggplotly() can surface
       # them in hover text. Dynamic aesthetic names require !!! splicing in aes().
       hover <- rlang::set_names(
-        list(rlang::sym(sc), rlang::sym(hc), rlang::sym(tc), rlang::sym(ac)),
-        c(sc, hc, tc, ac)
+        list(rlang::sym(sc), rlang::sym(hc), rlang::sym(tc),
+             rlang::sym("within_sample_freq")),
+        c(sc, hc, tc, "within_sample_freq")
       )
       mapping <- ggplot2::aes(
         xmin = as.numeric(.data[[tc]]) - 0.5,
         xmax = as.numeric(.data[[tc]]) + 0.5,
-        ymin = as.numeric(.data[[sc]]) + .data[["fracModCumSum"]] - 0.5,
-        ymax = as.numeric(.data[[sc]]) + .data[["fracModCumSum"]] +
-          .data[["relAbundCol_mod"]] - 0.5,
+        ymin = as.numeric(.data[[sc]]) + .data[["freq_mod_cumsum"]] - 0.5,
+        ymax = as.numeric(.data[[sc]]) + .data[["freq_mod_cumsum"]] +
+          .data[["within_sample_freq_mod"]] - 0.5,
         fill = .data[[fill_col]],
         !!!hover
       )
