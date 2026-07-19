@@ -39,7 +39,7 @@ test_that("export_groups_pdf combines per-cluster pages into one PDF", {
   f <- tempfile(fileext = ".pdf")
   suppressWarnings(rb$export_groups_pdf(
     f, plot_fun = function(sub) suppressWarnings(sub$plot(x_axis_labels = FALSE)),
-    by = "cluster", k = 4
+    by = "cluster", k = 4, device = "pdf"
   ))
   expect_true(file.exists(f))
   expect_equal(qpdf::pdf_length(f), 4L)
@@ -51,7 +51,7 @@ test_that("export_groups_pdf by meta can write separate files", {
   outs <- suppressWarnings(rb$export_groups_pdf(
     tempfile(fileext = ".pdf"),
     plot_fun = function(sub) suppressWarnings(sub$plot(x_axis_labels = FALSE)),
-    by = "meta", meta_col = "secondaryRegion", combine = FALSE
+    by = "meta", meta_col = "secondaryRegion", combine = FALSE, device = "pdf"
   ))
   expect_gt(length(outs), 1)
   expect_true(all(file.exists(outs)))
