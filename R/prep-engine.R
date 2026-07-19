@@ -155,19 +155,21 @@
 }
 
 # Top-level engine used by the HaplotypeRainbow class.
-.prep_engine <- function(data, cols, sort = c("population", "frac", "shade"),
+.prep_engine <- function(data, cols,
+                         sort = c("population_rank", "within_sample_freq", "shade"),
                          min_pop_size = 1, color_period = 11, bar_height = 0.80,
                          base_colors = c("#e41a1c", "#377eb8", "#4daf4a",
                                          "#984ea3", "#ff7f00", "#ffff33")) {
   sort <- match.arg(sort)
   data <- .canonicalize(data, cols)
-  core <- .prep_core(data, bar_height, arrange_by_frac = (sort == "frac"))
+  core <- .prep_core(data, bar_height,
+                     arrange_by_frac = (sort == "within_sample_freq"))
 
   prepped <- switch(
     sort,
-    population = .prep_rainbow_colors(core, min_pop_size, color_period),
-    frac       = .prep_rainbow_colors(core, min_pop_size, color_period),
-    shade      = .prep_shade_colors(core, min_pop_size, base_colors)
+    population_rank    = .prep_rainbow_colors(core, min_pop_size, color_period),
+    within_sample_freq = .prep_rainbow_colors(core, min_pop_size, color_period),
+    shade              = .prep_shade_colors(core, min_pop_size, base_colors)
   )
 
   .decanonicalize(prepped, cols)
