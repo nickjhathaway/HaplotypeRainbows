@@ -706,7 +706,8 @@ the base device (e.g. on Windows, where the cairo device can misbehave).
       \item{\code{file}}{Output file path.}
       \item{\code{width}}{Width in inches (default from \code{dims()}).}
       \item{\code{height}}{Height in inches (default from \code{dims()}).}
-      \item{\code{device}}{"cairo" (default) or "pdf".}
+      \item{\code{device}}{"cairo" (default) or "pdf"; cairo falls back to pdf() when the
+platform lacks cairo support.}
       \item{\code{size_include_legend}}{If \code{TRUE} (and sizing automatically), enlarge the
 figure so the plot's legend fits too. Default \code{FALSE}.}
       \item{\code{bg}}{Background colour of the device; defaults to "transparent".}
@@ -796,7 +797,8 @@ so it is not clipped.
       \item{\code{width}}{Width in inches (default: estimated from the legend).}
       \item{\code{height}}{Height in inches (default: estimated from the legend).}
       \item{\code{margin}}{Inches of padding added around the estimated size.}
-      \item{\code{device}}{"cairo" (default) or "pdf".}
+      \item{\code{device}}{"cairo" (default) or "pdf"; cairo falls back to pdf() when the
+platform lacks cairo support.}
       \item{\code{bg}}{Background colour of the device; defaults to "transparent".}
       \item{\code{...}}{Passed to the graphics device.}
     }
@@ -845,7 +847,8 @@ ggplot. e.g. \code{function(sub) sub$plot()}.}
 or "meta" (needs \code{set_sample_meta()} and \code{meta_col}).}
       \item{\code{k, h}}{Cluster cut (when \code{by = "cluster"}).}
       \item{\code{meta_col}}{Sample-metadata column to group by (when \code{by = "meta"}).}
-      \item{\code{device}}{"cairo" (default) or "pdf".}
+      \item{\code{device}}{"cairo" (default) or "pdf"; cairo falls back to pdf() when the
+platform lacks cairo support.}
       \item{\code{combine}}{Combine the per-group pages into one PDF (needs \pkg{qpdf});
 if \code{FALSE}, write a separate file per group.}
       \item{\code{align_targets}}{Pad sample-name labels to a common width (mono font) so the

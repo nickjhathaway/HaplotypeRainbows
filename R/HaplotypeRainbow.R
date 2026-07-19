@@ -455,7 +455,8 @@ HaplotypeRainbow <- R6::R6Class(
     #' @param file Output file path.
     #' @param width Width in inches (default from `dims()`).
     #' @param height Height in inches (default from `dims()`).
-    #' @param device "cairo" (default) or "pdf".
+    #' @param device "cairo" (default) or "pdf"; cairo falls back to pdf() when the
+    #'   platform lacks cairo support.
     #' @param size_include_legend If `TRUE` (and sizing automatically), enlarge the
     #'   figure so the plot's legend fits too. Default `FALSE`.
     #' @param bg Background colour of the device; defaults to "transparent".
@@ -470,7 +471,8 @@ HaplotypeRainbow <- R6::R6Class(
         if (is.null(width)) width <- d$width
         if (is.null(height)) height <- d$height
       }
-      if (device == "cairo") {
+      # fall back to pdf() when cairo is requested but unavailable on this platform
+      if (device == "cairo" && capabilities("cairo")) {
         grDevices::cairo_pdf(file, width = width, height = height, bg = bg, ...)
       } else {
         grDevices::pdf(file, width = width, height = height, bg = bg,
@@ -507,7 +509,8 @@ HaplotypeRainbow <- R6::R6Class(
     #' @param width Width in inches (default: estimated from the legend).
     #' @param height Height in inches (default: estimated from the legend).
     #' @param margin Inches of padding added around the estimated size.
-    #' @param device "cairo" (default) or "pdf".
+    #' @param device "cairo" (default) or "pdf"; cairo falls back to pdf() when the
+    #'   platform lacks cairo support.
     #' @param bg Background colour of the device; defaults to "transparent".
     #' @param ... Passed to the graphics device.
     #' @return The file path, invisibly.
@@ -520,7 +523,8 @@ HaplotypeRainbow <- R6::R6Class(
         if (is.null(width)) width <- sz[["width"]]
         if (is.null(height)) height <- sz[["height"]]
       }
-      if (device == "cairo") {
+      # fall back to pdf() when cairo is requested but unavailable on this platform
+      if (device == "cairo" && capabilities("cairo")) {
         grDevices::cairo_pdf(file, width = width, height = height, bg = bg, ...)
       } else {
         grDevices::pdf(file, width = width, height = height, bg = bg,
@@ -545,7 +549,8 @@ HaplotypeRainbow <- R6::R6Class(
     #'   or "meta" (needs `set_sample_meta()` and `meta_col`).
     #' @param k,h Cluster cut (when `by = "cluster"`).
     #' @param meta_col Sample-metadata column to group by (when `by = "meta"`).
-    #' @param device "cairo" (default) or "pdf".
+    #' @param device "cairo" (default) or "pdf"; cairo falls back to pdf() when the
+    #'   platform lacks cairo support.
     #' @param combine Combine the per-group pages into one PDF (needs \pkg{qpdf});
     #'   if `FALSE`, write a separate file per group.
     #' @param align_targets Pad sample-name labels to a common width (mono font) so the
