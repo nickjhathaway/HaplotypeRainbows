@@ -12,6 +12,7 @@ Creates haplotype "rainbow" plots from targeted amplicon (microhaplotype) sequen
 Useful links:
 \itemize{
   \item \url{https://github.com/nickjhathaway/HaplotypeRainbows}
+  \item \url{https://nickjhathaway.github.io/HaplotypeRainbows}
   \item Report bugs at \url{https://github.com/nickjhathaway/HaplotypeRainbows/issues}
 }
 

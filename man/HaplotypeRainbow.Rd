@@ -31,6 +31,13 @@ rb$plot()
     \item \href{#method-HaplotypeRainbow-sort_by_clustering}{\code{HaplotypeRainbow$sort_by_clustering()}}
     \item \href{#method-HaplotypeRainbow-set_sample_order}{\code{HaplotypeRainbow$set_sample_order()}}
     \item \href{#method-HaplotypeRainbow-sort_alphabetical}{\code{HaplotypeRainbow$sort_alphabetical()}}
+    \item \href{#method-HaplotypeRainbow-set_sample_meta}{\code{HaplotypeRainbow$set_sample_meta()}}
+    \item \href{#method-HaplotypeRainbow-set_target_meta}{\code{HaplotypeRainbow$set_target_meta()}}
+    \item \href{#method-HaplotypeRainbow-get_sample_meta}{\code{HaplotypeRainbow$get_sample_meta()}}
+    \item \href{#method-HaplotypeRainbow-get_target_meta}{\code{HaplotypeRainbow$get_target_meta()}}
+    \item \href{#method-HaplotypeRainbow-sort_samples_by_meta}{\code{HaplotypeRainbow$sort_samples_by_meta()}}
+    \item \href{#method-HaplotypeRainbow-sort_targets_by_meta}{\code{HaplotypeRainbow$sort_targets_by_meta()}}
+    \item \href{#method-HaplotypeRainbow-set_target_order}{\code{HaplotypeRainbow$set_target_order()}}
     \item \href{#method-HaplotypeRainbow-plot}{\code{HaplotypeRainbow$plot()}}
     \item \href{#method-HaplotypeRainbow-get_prepped}{\code{HaplotypeRainbow$get_prepped()}}
     \item \href{#method-HaplotypeRainbow-print}{\code{HaplotypeRainbow$print()}}
@@ -186,6 +193,160 @@ samples for the clustering.}
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{HaplotypeRainbow$sort_alphabetical()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    The object, invisibly (chainable).
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-set_sample_meta"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-set_sample_meta}{}}}
+\subsection{\code{HaplotypeRainbow$set_sample_meta()}}{
+  Attach per-sample metadata to the object (used by the metadata
+sidebar and by \code{sort_samples_by_meta()}).
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$set_sample_meta(meta, match_col, cols = NULL, add = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{meta}}{A data frame of sample metadata.}
+      \item{\code{match_col}}{Name of the column in \code{meta} that holds the sample identifiers.}
+      \item{\code{cols}}{Metadata columns to keep (default: all columns except \code{match_col}).}
+      \item{\code{add}}{If \code{FALSE} (default) replace any existing sample metadata; if \code{TRUE}
+merge these columns onto the existing sample metadata (joined on the samples).}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    The object, invisibly (chainable).
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-set_target_meta"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-set_target_meta}{}}}
+\subsection{\code{HaplotypeRainbow$set_target_meta()}}{
+  Attach per-target metadata to the object (used by the target
+annotation strip and by \code{sort_targets_by_meta()}).
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$set_target_meta(meta, match_col, cols = NULL, add = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{meta}}{A data frame of target metadata.}
+      \item{\code{match_col}}{Name of the column in \code{meta} that holds the target names.}
+      \item{\code{cols}}{Metadata columns to keep (default: all columns except \code{match_col}).}
+      \item{\code{add}}{If \code{FALSE} (default) replace any existing target metadata; if \code{TRUE}
+merge these columns onto the existing target metadata (joined on the targets).}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    The object, invisibly (chainable).
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-get_sample_meta"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-get_sample_meta}{}}}
+\subsection{\code{HaplotypeRainbow$get_sample_meta()}}{
+  Return the stored sample metadata (or \code{NULL}).
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$get_sample_meta()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A data frame.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-get_target_meta"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-get_target_meta}{}}}
+\subsection{\code{HaplotypeRainbow$get_target_meta()}}{
+  Return the stored target metadata (or \code{NULL}).
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$get_target_meta()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A data frame.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-sort_samples_by_meta"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-sort_samples_by_meta}{}}}
+\subsection{\code{HaplotypeRainbow$sort_samples_by_meta()}}{
+  Order samples by one or more sample-metadata columns. Samples with
+no metadata are placed at the end.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$sort_samples_by_meta(cols, desc = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{cols}}{Character vector of sample-metadata column names to order by.}
+      \item{\code{desc}}{Sort descending instead of ascending.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    The object, invisibly (chainable).
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-sort_targets_by_meta"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-sort_targets_by_meta}{}}}
+\subsection{\code{HaplotypeRainbow$sort_targets_by_meta()}}{
+  Order targets by one or more target-metadata columns. Targets with
+no metadata are placed at the end.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$sort_targets_by_meta(cols, desc = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{cols}}{Character vector of target-metadata column names to order by.}
+      \item{\code{desc}}{Sort descending instead of ascending.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    The object, invisibly (chainable).
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-set_target_order"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-set_target_order}{}}}
+\subsection{\code{HaplotypeRainbow$set_target_order()}}{
+  Set the target (column) order explicitly.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$set_target_order(levels)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{levels}}{Character vector of target names in the desired order.}
+    }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
