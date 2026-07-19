@@ -1,0 +1,174 @@
+---
+title: "Examples: a full tour of the options"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 12,
+  fig.height = 8,
+  dpi = 100,
+  out.width = "100%"
+)
+```
+
+This article is the exhaustive companion to the README: it walks through **every**
+`HaplotypeRainbow` option so the README can stay slim. Each section is a self-contained
+recipe you can copy.
+
+```{r setup}
+library(HaplotypeRainbows)
+library(ggplot2)
+
+# example data (uses the older SeekDeep column names)
+data("pfisolateExample")
+```
+
+## Constructing the object
+
+`HaplotypeRainbow` carries your column mapping so you only set it once. The defaults
+follow the Portable Microhaplotype Object (PMO) convention
+(`library_sample_name` / `target_name` / `seq` / `reads`); the example data uses the
+older SeekDeep names, so we pass them explicitly.
+
+```{r construct}
+rb <- HaplotypeRainbow$new(
+  pfIsosHeomeV1,
+  sample_col    = "s_Sample",
+  target_col    = "p_name",
+  popuid_col    = "h_popUID",
+  rel_abund_col = "c_AveragedFrac"
+)
+rb
+```
+
+`haplotype_rainbow()` is an identical convenience constructor:
+
+```{r construct-wrapper, eval = FALSE}
+rb <- haplotype_rainbow(my_pmo_allele_table)   # PMO column names, no mapping needed
+```
+
+Transforming methods (`prep()`, `prep_shade()`, `sort_*()`, `set_sample_order()`) mutate
+the object and return it, so they chain; `plot()` returns a ggplot.
+
+## Prepping: haplotype ordering
+
+`prep(sort = ...)` controls how haplotypes stack within each cell.
+
+```{r prep-population}
+rb$prep(sort = "population_rank")   # order by population rank (default)
+rb$plot()
+```
+
+```{r prep-frac}
+rb$prep(sort = "within_sample_freq")   # order by within-sample fraction
+rb$plot()
+```
+
+Other `prep()` knobs:
+
+```{r prep-args, eval = FALSE}
+rb$prep(
+  sort         = "population_rank",
+  min_pop_size = 2,     # drop targets with < 2 unique haplotypes
+  color_period = 11,    # hue steps to rotate across targets (the "rainbow" period)
+  bar_height   = 0.80   # < 1 leaves a gap between sample rows
+)
+```
+
+## Sorting samples
+
+By default samples are alphabetical. Cluster similar samples (by haplotype sharing,
+ward.D2) so they sit together:
+
+```{r sort-cluster}
+rb$prep(sort = "population_rank")$sort_by_clustering()
+rb$plot()
+```
+
+`sort_by_clustering()` options, plus the manual/alphabetical orderings:
+
+```{r sort-options, eval = FALSE}
+rb$sort_by_clustering(by_major_allele = TRUE)   # cluster on the major allele only
+rb$sort_by_clustering(coverage_cutoff = 0.90)   # only targets in >= 90% of samples
+rb$set_sample_order(c("3D7", "HB3"))            # explicit order (rest appended)
+rb$sort_alphabetical()                           # back to the default
+```
+
+## Plotting: colours
+
+Supply your own ramp (length should match `color_period`):
+
+```{r colors-custom}
+rb$plot(colors = c("#F50300", "#FF6E00", "#FFEB01", "#00CA1E", "#0241FE", "#FE00D4"))
+```
+
+The package also ships colour-blind-friendly categorical palettes
+(`colorPalette_08`, `colorPalette_12`, `colorPalette_15`):
+
+```{r palettes}
+scales::show_col(colorPalette_12)
+```
+
+The rainbow fill can be driven by either colour column from the prep:
+
+```{r color-col, eval = FALSE}
+rb$plot(color_col = "popidFracLogColor")   # default (log-spaced hue)
+rb$plot(color_col = "popidFracRegColor")   # linear hue
+```
+
+## Plotting: axis labels
+
+Target names (x) and sample names (y) show by default. Toggle either off — the plot
+keeps tight margins with no leftover ticks (handy when there are too many samples or
+targets to label):
+
+```{r axis-toggle}
+rb$plot(x_axis_labels = FALSE)                        # hide target names
+```
+
+```{r axis-toggle-both}
+rb$plot(x_axis_labels = FALSE, y_axis_labels = FALSE) # hide both
+```
+
+## Shade plots
+
+Instead of a rotating rainbow, `prep_shade()` colours each target with shades of a
+per-target base colour. `plot()` then uses the shade colours automatically:
+
+```{r shade}
+rb$prep_shade(min_pop_size = 1)
+rb$plot()
+```
+
+`prep_shade()` accepts the base colours to generate shades from:
+
+```{r shade-args, eval = FALSE}
+rb$prep_shade(
+  min_pop_size = 1,
+  bar_height   = 0.80,
+  base_colors  = colorPalette_08
+)
+```
+
+## Interactive tooltips
+
+`plot()` carries the sample, target, haplotype and abundance values as extra aesthetics,
+so `plotly::ggplotly()` surfaces them on hover:
+
+```{r plotly, eval = FALSE}
+p <- rb$prep(sort = "population_rank")$plot()
+plotly::ggplotly(p)
+```
+
+## Accessing the prepped data
+
+`get_prepped()` returns the prepped table if you want to post-process the plot yourself:
+
+```{r get-prepped}
+rb$prep(sort = "population_rank")
+head(rb$get_prepped())
+```
