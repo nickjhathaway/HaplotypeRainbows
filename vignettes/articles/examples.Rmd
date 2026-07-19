@@ -296,20 +296,33 @@ grp <- rb$cluster_groups(k = 6) # tibble: sample -> cluster (dendrogram order)
 
 ### Cluster bands on one plot
 
-`add_cluster_bands()` overlays alternating translucent bands, one per cluster group, so
-you can see the clusters on a single plot:
+`add_cluster_bands()` overlays alternating bands, one per cluster group, so you can see
+the clusters on a single plot. On a dense grid the translucent overlay alone is subtle,
+so use `expand` to push the bands into visible margin strips and/or a `border` to draw a
+line around each cluster block:
 
 ```{r cluster-bands, fig.width = 12, fig.height = 8}
 rb$prep(sort = "population_rank")$sort_by_clustering()
-p <- rb$plot()
-rb$add_cluster_bands(p, k = 6)
+p <- rb$plot(x_axis_labels = FALSE)
+rb$add_cluster_bands(p, k = 6, expand = 2, border = "black")
+```
+
+### A real gap between clusters
+
+`add_cluster_gaps()` inserts blank spacer rows between clusters, so the cells, sidebar
+and cluster bands all separate together (everything is positioned by the sample factor).
+Call with `gap = 0` to remove the spacers.
+
+```{r cluster-gaps, fig.width = 12, fig.height = 8}
+rb$prep(sort = "population_rank")$sort_by_clustering()$add_cluster_gaps(k = 6, gap = 2)
+rb$plot(x_axis_labels = FALSE)
 ```
 
 ### A plot per cluster (or metadata group)
 
 `export_groups_pdf()` renders one plot per group, **auto-sizing each to its own sample
 count**, and combines them into a single multi-page PDF (each page correctly sized) via
-the qpdf package. You pass a `plot_fun` that builds the plot for a per-group sub-object,
+the qpdf package. By default (`align_targets = TRUE`) sample names are padded to a common width so the plot body / targets line up at the same position on every page. You pass a `plot_fun` that builds the plot for a per-group sub-object,
 so each page can have the same sidebar / annotations you want:
 
 ```{r export-groups, eval = FALSE}
