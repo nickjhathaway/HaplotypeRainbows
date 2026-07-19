@@ -20,7 +20,7 @@ test_that("get_hclust / get_dendrogram error before clustering, work after", {
 test_that("cluster_groups cuts into k groups, relabelled in dendrogram order", {
   rb <- new_rb()$prep(sort = "population_rank")$sort_by_clustering()
   cg <- rb$cluster_groups(k = 4)
-  expect_true(all(c("s_Sample", "cluster") %in% names(cg)))
+  expect_true(all(c("sample", "cluster") %in% names(cg)))
   expect_equal(nlevels(cg$cluster), 4)
   # first sample belongs to cluster 1 (labels are relabelled by appearance)
   expect_identical(as.character(cg$cluster[1]), "1")
@@ -68,15 +68,15 @@ test_that("export_groups_pdf validates grouping inputs", {
 
 test_that("add_cluster_gaps inserts spacer rows between clusters", {
   rb <- new_rb()$prep(sort = "population_rank")$sort_by_clustering()
-  n_real <- dplyr::n_distinct(rb$get_prepped()$s_Sample)
+  n_real <- dplyr::n_distinct(rb$get_prepped()$sample)
   rb$add_cluster_gaps(k = 6, gap = 2)
   # 6 clusters -> 5 gaps x 2 rows = 10 spacer levels added
-  expect_equal(nlevels(rb$get_prepped()$s_Sample), n_real + 10)
+  expect_equal(nlevels(rb$get_prepped()$sample), n_real + 10)
   # plot renders and drops spacer labels
   expect_s3_class(suppressWarnings(rb$plot()), "ggplot")
   # gap = 0 removes the spacers
   rb$add_cluster_gaps(k = 6, gap = 0)
-  expect_equal(nlevels(rb$get_prepped()$s_Sample), n_real)
+  expect_equal(nlevels(rb$get_prepped()$sample), n_real)
 })
 
 test_that("add_cluster_gaps requires a prior clustering", {
@@ -104,7 +104,7 @@ test_that("add_cluster_bands overlays one band per group", {
 
 test_that("clustering honours dist/linkage and a target subset", {
   rb <- new_rb()$prep(sort = "population_rank")
-  tars <- head(unique(as.character(rb$get_prepped()$p_name)), 10)
+  tars <- head(unique(as.character(rb$get_prepped()$target)), 10)
   rb$sort_by_clustering(targets = tars, dist_method = "manhattan",
                         hclust_method = "complete")
   expect_s3_class(rb$get_hclust(), "hclust")

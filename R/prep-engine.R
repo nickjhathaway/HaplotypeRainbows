@@ -2,69 +2,66 @@
 #
 # The three historical prep functions (prepForRainbow, prepForRainbowArrangedByFrac
 # and prepForRainbowShade) were ~90% identical. They are unified here into a single
-# engine. To keep behaviour byte-identical to the original functions, the user's four
-# columns are renamed to canonical internal names, the original dplyr pipeline is run
-# verbatim against those canonical names, and the four columns are renamed back on the
-# way out. Everything downstream (derived columns) is named the same regardless of the
-# user's column mapping.
+# engine. The user's four mapped columns are pulled out of the input (every other
+# column is dropped) and given canonical internal names -- sample, target, hapid and
+# rel_abund -- so the engine, and every method that later reads the prepped table,
+# works against a small, fixed, collision-free schema regardless of the user's column
+# names. `rel_abund` keeps the RAW counts; the within-sample/target fraction is added
+# as `within_sample_freq` (with `total_abund` the per-(sample, target) denominator).
+# All derived columns are snake_case.
 
-# Rename the four mapped columns to canonical internal names.
+# Select ONLY the four mapped columns and give them canonical internal names.
+# transmute() drops every other input column, which keeps the internal frame small and
+# -- crucially -- avoids name collisions when a user column happens to share a canonical
+# name (e.g. a stray SeekDeep `p_name` left in the data when the target was remapped to
+# a different column).
 .canonicalize <- function(data, cols) {
-  dplyr::rename(
+  dplyr::transmute(
     data,
-    s_Sample       = dplyr::all_of(cols$sample),
-    p_name         = dplyr::all_of(cols$target),
-    h_popUID       = dplyr::all_of(cols$popuid),
-    c_AveragedFrac = dplyr::all_of(cols$rel_abund)
+    sample    = .data[[cols$sample]],
+    target    = .data[[cols$target]],
+    hapid     = .data[[cols$popuid]],
+    rel_abund = .data[[cols$rel_abund]]
   )
 }
 
-# Rename the four canonical columns back to the user's names.
-.decanonicalize <- function(data, cols) {
-  dplyr::rename(
-    data,
-    "{cols$sample}"    := "s_Sample",
-    "{cols$target}"    := "p_name",
-    "{cols$popuid}"    := "h_popUID",
-    "{cols$rel_abund}" := "c_AveragedFrac"
-  )
-}
-
-# Shared core: collapse to (sample, target, haplotype), normalise within-sample/target
-# fraction, and compute the cumulative-sum bar geometry. When `arrange_by_frac` is TRUE
-# the rows are ordered by ascending fraction before the cumulative sums (this is the only
-# difference between the "population" and "frac" preps).
+# Shared core: collapse to (sample, target, haplotype), keep the raw counts in
+# `rel_abund`, add the per-(sample, target) `total_abund` and the `within_sample_freq`
+# fraction, and compute the cumulative-sum bar geometry (from the fraction). When
+# `arrange_by_frac` is TRUE the rows are ordered by ascending fraction before the
+# cumulative sums (this is the only difference between the "population" and "frac"
+# preps).
 .prep_core <- function(data, bar_height, arrange_by_frac) {
   out <- data %>%
-    dplyr::group_by(s_Sample) %>%
-    dplyr::mutate(targetNumber = length(unique(p_name))) %>%
+    dplyr::group_by(sample) %>%
+    dplyr::mutate(n_targets = length(unique(target))) %>%
     dplyr::group_by() %>%
-    dplyr::mutate(s_Sample = as.character(s_Sample)) %>%
-    dplyr::mutate(s_Sample = factor(s_Sample)) %>%
-    dplyr::group_by(s_Sample) %>%
-    dplyr::arrange(h_popUID) %>%
-    dplyr::group_by(s_Sample, p_name, h_popUID) %>%
-    dplyr::summarise(c_AveragedFrac = sum(c_AveragedFrac), .groups = "drop_last") %>%
-    dplyr::group_by(s_Sample, p_name) %>%
-    dplyr::mutate(totalAbund = sum(c_AveragedFrac)) %>%
-    dplyr::mutate(c_AveragedFrac = c_AveragedFrac / totalAbund)
+    dplyr::mutate(sample = as.character(sample)) %>%
+    dplyr::mutate(sample = factor(sample)) %>%
+    dplyr::group_by(sample) %>%
+    dplyr::arrange(hapid) %>%
+    dplyr::group_by(sample, target, hapid) %>%
+    dplyr::summarise(rel_abund = sum(rel_abund), .groups = "drop_last") %>%
+    dplyr::group_by(sample, target) %>%
+    dplyr::mutate(total_abund = sum(rel_abund)) %>%
+    dplyr::mutate(within_sample_freq = rel_abund / total_abund)
 
   if (arrange_by_frac) {
-    out <- out %>% dplyr::arrange(c_AveragedFrac)
+    out <- out %>% dplyr::arrange(within_sample_freq)
   }
 
   out <- out %>%
-    dplyr::group_by(s_Sample, p_name, h_popUID) %>%
-    dplyr::mutate(s_COI = length(unique(h_popUID))) %>%
-    dplyr::group_by(s_Sample, p_name) %>%
+    dplyr::group_by(sample, target, hapid) %>%
+    dplyr::mutate(sample_coi = length(unique(hapid))) %>%
+    dplyr::group_by(sample, target) %>%
     dplyr::mutate(
-      relAbundCol_mod   = c_AveragedFrac * bar_height,
-      fracCumSum        = cumsum(c_AveragedFrac) - c_AveragedFrac,
-      fracModCumSum     = cumsum(relAbundCol_mod) - relAbundCol_mod,
-      fakeFrac          = 1 / unique(s_COI),
-      fakeFracMod       = fakeFrac * bar_height,
-      fakeFracCumSum    = cumsum(fakeFrac) - fakeFrac,
-      fakeFracModCumSum = cumsum(fakeFracMod) - fakeFracMod
+      within_sample_freq_mod = within_sample_freq * bar_height,
+      freq_cumsum          = cumsum(within_sample_freq) - within_sample_freq,
+      freq_mod_cumsum      = cumsum(within_sample_freq_mod) - within_sample_freq_mod,
+      fake_freq            = 1 / unique(sample_coi),
+      fake_freq_mod        = fake_freq * bar_height,
+      fake_freq_cumsum     = cumsum(fake_freq) - fake_freq,
+      fake_freq_mod_cumsum = cumsum(fake_freq_mod) - fake_freq_mod
     )
   out
 }
@@ -72,14 +69,14 @@
 # Rank haplotypes within each target by how many samples carry them.
 .prep_popname <- function(core) {
   core %>%
-    dplyr::select(s_Sample, p_name, h_popUID) %>%
+    dplyr::select(sample, target, hapid) %>%
     unique() %>%
-    dplyr::group_by(p_name, h_popUID) %>%
+    dplyr::group_by(target, hapid) %>%
     dplyr::summarise(samp_n = dplyr::n(), .groups = "drop_last") %>%
-    dplyr::arrange(p_name, dplyr::desc(samp_n)) %>%
-    dplyr::group_by(p_name) %>%
-    dplyr::mutate(popid = dplyr::row_number()) %>%
-    dplyr::mutate(maxPopid = max(popid))
+    dplyr::arrange(target, dplyr::desc(samp_n)) %>%
+    dplyr::group_by(target) %>%
+    dplyr::mutate(pop_id = dplyr::row_number()) %>%
+    dplyr::mutate(max_pop_id = max(pop_id))
 }
 
 # Population / frac colouring tail: rotate a hue offset across targets so that colours
@@ -87,26 +84,26 @@
 .prep_rainbow_colors <- function(core, min_pop_size, color_period) {
   filt <- core %>%
     dplyr::left_join(.prep_popname(core),
-                     by = c("p_name", "h_popUID")) %>%
-    dplyr::filter(maxPopid >= min_pop_size) %>%
+                     by = c("target", "hapid")) %>%
+    dplyr::filter(max_pop_id >= min_pop_size) %>%
     dplyr::group_by() %>%
-    dplyr::mutate(p_name = factor(p_name))
+    dplyr::mutate(target = factor(target))
 
-  target_levels <- levels(dplyr::pull(filt, p_name))
+  target_levels <- levels(dplyr::pull(filt, target))
   target_to_hue <- tibble::tibble(
-    p_name = factor(target_levels, levels = target_levels),
-    hueMod = (seq_along(target_levels) - 1) %% color_period + 1
+    target = factor(target_levels, levels = target_levels),
+    hue_mod = (seq_along(target_levels) - 1) %% color_period + 1
   )
 
   filt %>%
-    dplyr::group_by(p_name) %>%
-    dplyr::mutate(popidFrac = (popid - 1) / maxPopid) %>%
-    dplyr::left_join(target_to_hue, by = "p_name") %>%
+    dplyr::group_by(target) %>%
+    dplyr::mutate(pop_id_frac = (pop_id - 1) / max_pop_id) %>%
+    dplyr::left_join(target_to_hue, by = "target") %>%
     dplyr::mutate(
-      popidPerc         = 100 * popidFrac,
-      popidFracRegColor = round(abs((popidPerc + (hueMod / color_period) * 100) %% 200 - 0.0001) %% 100),
-      popidPercLog      = log((popidFrac * 99) + 1, base = 100) * 100,
-      popidFracLogColor = round(abs((popidPercLog + (hueMod / color_period) * 100) %% 200 - 0.0001) %% 100)
+      pop_id_perc           = 100 * pop_id_frac,
+      pop_id_frac_reg_color = round(abs((pop_id_perc + (hue_mod / color_period) * 100) %% 200 - 0.0001) %% 100),
+      pop_id_perc_log       = log((pop_id_frac * 99) + 1, base = 100) * 100,
+      pop_id_frac_log_color = round(abs((pop_id_perc_log + (hue_mod / color_period) * 100) %% 200 - 0.0001) %% 100)
     ) %>%
     dplyr::group_by()
 }
@@ -115,46 +112,47 @@
 .prep_shade_colors <- function(core, min_pop_size, base_colors) {
   filt <- core %>%
     dplyr::left_join(.prep_popname(core),
-                     by = c("p_name", "h_popUID")) %>%
-    dplyr::filter(maxPopid >= min_pop_size) %>%
+                     by = c("target", "hapid")) %>%
+    dplyr::filter(max_pop_id >= min_pop_size) %>%
     dplyr::group_by() %>%
-    dplyr::mutate(p_name = factor(p_name))
+    dplyr::mutate(target = factor(target))
 
   pop_colors <- core %>%
     dplyr::left_join(.prep_popname(core),
-                     by = c("p_name", "h_popUID")) %>%
-    dplyr::group_by(p_name, h_popUID) %>%
+                     by = c("target", "hapid")) %>%
+    dplyr::group_by(target, hapid) %>%
     dplyr::count() %>%
-    dplyr::group_by(p_name) %>%
+    dplyr::group_by(target) %>%
     dplyr::mutate(total = sum(n)) %>%
-    dplyr::arrange(p_name, n) %>%
+    dplyr::arrange(target, n) %>%
     dplyr::mutate(freq = n / total) %>%
-    dplyr::group_by(p_name) %>%
+    dplyr::group_by(target) %>%
     dplyr::mutate(
-      p_uniqHaps    = dplyr::n(),
+      p_uniq_haps   = dplyr::n(),
       h_id          = dplyr::row_number(),
-      h_id_freq     = h_id / p_uniqHaps,
+      h_id_freq     = h_id / p_uniq_haps,
       h_id_freq_mod = h_id_freq * 0.75 + 0.25,
-      cumFreq       = cumsum(freq),
-      modCumFreq    = cumFreq * 0.75 + 0.25,
-      p_name        = factor(p_name),
-      p_color_ID    = (as.numeric(p_name) %% length(base_colors)) + 1,
-      p_hue         = p_color_ID / length(base_colors),
-      p_baseColor   = base_colors[p_color_ID],
-      h_color            = grDevices::hsv(p_hue, alpha = cumFreq),
-      h_color_mod        = scales::alpha(p_baseColor, alpha = modCumFreq),
-      h_color_byFreq     = scales::alpha(p_baseColor, alpha = h_id_freq),
-      h_color_byFreq_mod = scales::alpha(p_baseColor, alpha = h_id_freq_mod)
+      cum_freq      = cumsum(freq),
+      mod_cum_freq  = cum_freq * 0.75 + 0.25,
+      target        = factor(target),
+      p_color_id    = (as.numeric(target) %% length(base_colors)) + 1,
+      p_hue         = p_color_id / length(base_colors),
+      p_base_color  = base_colors[p_color_id],
+      h_color             = grDevices::hsv(p_hue, alpha = cum_freq),
+      h_color_mod         = scales::alpha(p_base_color, alpha = mod_cum_freq),
+      h_color_by_freq     = scales::alpha(p_base_color, alpha = h_id_freq),
+      h_color_by_freq_mod = scales::alpha(p_base_color, alpha = h_id_freq_mod)
     )
 
   filt %>%
-    dplyr::group_by(p_name) %>%
-    dplyr::mutate(popidFrac = (popid - 1) / maxPopid) %>%
-    dplyr::left_join(pop_colors, by = c("p_name", "h_popUID")) %>%
+    dplyr::group_by(target) %>%
+    dplyr::mutate(pop_id_frac = (pop_id - 1) / max_pop_id) %>%
+    dplyr::left_join(pop_colors, by = c("target", "hapid")) %>%
     dplyr::group_by()
 }
 
-# Top-level engine used by the HaplotypeRainbow class.
+# Top-level engine used by the HaplotypeRainbow class. Returns the prepped table with
+# canonical column names (the user's extra columns are intentionally not carried).
 .prep_engine <- function(data, cols,
                          sort = c("population_rank", "within_sample_freq", "shade"),
                          min_pop_size = 1, color_period = 11, bar_height = 0.80,
@@ -165,12 +163,10 @@
   core <- .prep_core(data, bar_height,
                      arrange_by_frac = (sort == "within_sample_freq"))
 
-  prepped <- switch(
+  switch(
     sort,
     population_rank    = .prep_rainbow_colors(core, min_pop_size, color_period),
     within_sample_freq = .prep_rainbow_colors(core, min_pop_size, color_period),
     shade              = .prep_shade_colors(core, min_pop_size, base_colors)
   )
-
-  .decanonicalize(prepped, cols)
 }

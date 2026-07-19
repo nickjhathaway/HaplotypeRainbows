@@ -54,6 +54,7 @@ rb$plot()
     \item \href{#method-HaplotypeRainbow-add_cluster_gaps}{\code{HaplotypeRainbow$add_cluster_gaps()}}
     \item \href{#method-HaplotypeRainbow-add_cluster_bands}{\code{HaplotypeRainbow$add_cluster_bands()}}
     \item \href{#method-HaplotypeRainbow-get_prepped}{\code{HaplotypeRainbow$get_prepped()}}
+    \item \href{#method-HaplotypeRainbow-column_map}{\code{HaplotypeRainbow$column_map()}}
     \item \href{#method-HaplotypeRainbow-print}{\code{HaplotypeRainbow$print()}}
     \item \href{#method-HaplotypeRainbow-clone}{\code{HaplotypeRainbow$clone()}}
   }
@@ -443,8 +444,8 @@ no metadata are placed at the end.
     \preformatted{HaplotypeRainbow$plot(
   style = NULL,
   colors = RColorBrewer::brewer.pal(11, "Spectral"),
-  color_col = "popidFracLogColor",
-  shade_col = "h_color_byFreq_mod",
+  color_col = "pop_id_frac_log_color",
+  shade_col = "h_color_by_freq_mod",
   rank_colors = FALSE,
   rank_palette = colorPalette_12,
   invariant_color = "#000000",
@@ -462,7 +463,7 @@ from shade prep). Defaults to "shade" when the data was prepped with
 \code{sort = "shade"}, otherwise "rainbow".}
       \item{\code{colors}}{Colour ramp for rainbow style. Length should match \code{color_period}.}
       \item{\code{color_col}}{Column to map to fill for rainbow style
-("popidFracLogColor" or "popidFracRegColor").}
+("pop_id_frac_log_color" or "pop_id_frac_reg_color").}
       \item{\code{shade_col}}{Identity-colour column for shade style.}
       \item{\code{rank_colors}}{Colour haplotypes by a discrete rank (with a legend) instead
 of the continuous rainbow gradient. When there are more ranks than palette
@@ -940,13 +941,42 @@ a line around each cluster block.}
 \if{latex}{\out{\hypertarget{method-HaplotypeRainbow-get_prepped}{}}}
 \subsection{\code{HaplotypeRainbow$get_prepped()}}{
   Return the prepped data frame (or \code{NULL} if \code{prep()} not yet called).
+The prepped table uses canonical column names (\code{sample}, \code{target}, \code{hapid},
+\code{rel_abund}); set \code{original_names = TRUE} to relabel those four back to the
+column names supplied for the input data, so the result can be rejoined to the
+source data (see \verb{$column_map()}).
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{HaplotypeRainbow$get_prepped()}
+    \preformatted{HaplotypeRainbow$get_prepped(original_names = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{original_names}}{Relabel the canonical columns back to the user's originals.}
+    }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
     A data frame.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-column_map"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-column_map}{}}}
+\subsection{\code{HaplotypeRainbow$column_map()}}{
+  Return the key mapping the canonical internal column names
+(\code{sample}, \code{target}, \code{hapid}, \code{rel_abund}) used in the prepped table to the
+original column names supplied for the input data. Use it to relabel prepped
+data and reconnect it to the source input.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$column_map()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A named character vector (names = canonical, values = original).
   }
 }
 
