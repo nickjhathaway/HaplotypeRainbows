@@ -461,7 +461,7 @@ plot, using the metadata attached with \code{set_sample_meta()}.
   width = 1,
   height = 1,
   gap = 0,
-  plot_gap = 0,
+  plot_gap = 1,
   colors = NULL,
   na_color = "grey80",
   legend = TRUE,
@@ -519,7 +519,7 @@ rainbow plot, using the metadata attached with \code{set_target_meta()}.
   width = 1,
   height = 1,
   gap = 0,
-  plot_gap = 0,
+  plot_gap = 1,
   colors = NULL,
   na_color = "grey80",
   legend = TRUE,
@@ -570,24 +570,30 @@ width with the number of targets and height with the number of samples.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{HaplotypeRainbow$dims(
+  p = NULL,
   cell_width = 0.3,
   cell_height = 0.3,
   min_width = 6,
   min_height = 6,
   extra_width = 0,
-  extra_height = 0
+  extra_height = 0,
+  size_include_legend = FALSE
 )}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
+      \item{\code{p}}{A ggplot; only needed when \code{size_include_legend = TRUE}.}
       \item{\code{cell_width}}{Inches per target column.}
       \item{\code{cell_height}}{Inches per sample row.}
       \item{\code{min_width}}{Minimum width.}
       \item{\code{min_height}}{Minimum height.}
-      \item{\code{extra_width}}{Padding added to width (e.g. for a sidebar / legends).}
-      \item{\code{extra_height}}{Padding added to height (e.g. for a target strip / legends).}
+      \item{\code{extra_width}}{Padding added to width (e.g. for a sidebar).}
+      \item{\code{extra_height}}{Padding added to height (e.g. for a target strip).}
+      \item{\code{size_include_legend}}{If \code{TRUE}, enlarge the size to fit the plot's
+(bottom) legend as well: widen to at least the legend width and add the
+legend height. Requires \code{p}.}
     }
     \if{html}{\out{</div>}}
   }
@@ -612,6 +618,7 @@ the base device (e.g. on Windows, where the cairo device can misbehave).
   width = NULL,
   height = NULL,
   device = c("cairo", "pdf"),
+  size_include_legend = FALSE,
   ...
 )}
     \if{html}{\out{</div>}}
@@ -624,6 +631,8 @@ the base device (e.g. on Windows, where the cairo device can misbehave).
       \item{\code{width}}{Width in inches (default from \code{dims()}).}
       \item{\code{height}}{Height in inches (default from \code{dims()}).}
       \item{\code{device}}{"cairo" (default) or "pdf".}
+      \item{\code{size_include_legend}}{If \code{TRUE} (and sizing automatically), enlarge the
+figure so the plot's legend fits too. Default \code{FALSE}.}
       \item{\code{...}}{Passed to the graphics device.}
     }
     \if{html}{\out{</div>}}
@@ -685,14 +694,17 @@ it elsewhere (e.g. with patchwork / cowplot / grid).
 \if{latex}{\out{\hypertarget{method-HaplotypeRainbow-save_legend_pdf}{}}}
 \subsection{\code{HaplotypeRainbow$save_legend_pdf()}}{
   Save just the legend of a plot to PDF (so it can be combined in
-post with the plot exported via \code{save_pdf(drop_legends(p), ...)}).
+post with the plot exported via \code{save_pdf(drop_legends(p), ...)}). When
+\code{width} / \code{height} are not supplied, the legend's natural size is estimated
+so it is not clipped.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{HaplotypeRainbow$save_legend_pdf(
   p,
   file,
-  width = 6,
-  height = 8,
+  width = NULL,
+  height = NULL,
+  margin = 0.2,
   device = c("cairo", "pdf"),
   ...
 )}
@@ -703,8 +715,9 @@ post with the plot exported via \code{save_pdf(drop_legends(p), ...)}).
     \describe{
       \item{\code{p}}{A ggplot.}
       \item{\code{file}}{Output file path.}
-      \item{\code{width}}{Width in inches.}
-      \item{\code{height}}{Height in inches.}
+      \item{\code{width}}{Width in inches (default: estimated from the legend).}
+      \item{\code{height}}{Height in inches (default: estimated from the legend).}
+      \item{\code{margin}}{Inches of padding added around the estimated size.}
       \item{\code{device}}{"cairo" (default) or "pdf".}
       \item{\code{...}}{Passed to the graphics device.}
     }
