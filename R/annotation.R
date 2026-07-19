@@ -45,14 +45,35 @@
   grDevices::rgb2hsv(grDevices::col2rgb(cols))["h", ]
 }
 
+# Reorder colours so that consecutive entries are as visually distinct as possible
+# (greedy: each next colour is the farthest, in RGB space, from the previous one). This
+# stops a smooth ramp from giving the most abundant ranks (1, 2, 3, ...) near-identical
+# colours.
+.distinct_order <- function(cols) {
+  n <- length(cols)
+  if (n <= 2) return(cols)
+  d <- as.matrix(stats::dist(t(grDevices::col2rgb(cols))))
+  ord <- integer(n)
+  used <- logical(n)
+  ord[1] <- 1L
+  used[1] <- TRUE
+  for (i in 2:n) {
+    cand <- which(!used)
+    ord[i] <- cand[which.max(d[ord[i - 1], cand])]
+    used[ord[i]] <- TRUE
+  }
+  cols[ord]
+}
+
 # Produce `n` haplotype-rank colours from a supplied palette. If `n` exceeds the palette
-# size, drop white/black, sort the rest by hue, and interpolate a ramp to `n` colours.
+# size, drop white/black, sort the rest by hue, interpolate a ramp to `n` colours, then
+# reorder so adjacent ranks are maximally distinct.
 .expand_rank_palette <- function(palette, n) {
   if (n <= length(palette)) return(palette[seq_len(n)])
   keep <- palette[!.is_white_or_black(palette)]
   if (length(keep) < 2) keep <- palette
   keep <- keep[order(.hue_of(keep))]
-  grDevices::colorRampPalette(keep)(n)
+  .distinct_order(grDevices::colorRampPalette(keep)(n))
 }
 
 # Merge user-supplied colours over the auto-assigned ones.
@@ -77,6 +98,26 @@
     for (j in seq_along(cols)) if (j <= length(x)) out[[cols[[j]]]] <- x[[j]]
   }
   out
+}
+
+# Coerce the given metadata columns to factors, honouring any user-supplied level
+# order (per column, via a named list). Supplied levels come first; any remaining
+# values are appended in their natural (sorted) order. This controls both the colour
+# assignment and the legend entry order.
+.apply_level_order <- function(aligned, cols, level_order) {
+  lo <- .per_col(level_order, cols)
+  for (cc in cols) {
+    x <- as.character(aligned[[cc]])
+    present <- sort(unique(x[!is.na(x)]))
+    ord <- lo[[cc]]
+    full <- if (is.null(ord)) {
+      present
+    } else {
+      c(as.character(ord), setdiff(present, as.character(ord)))
+    }
+    aligned[[cc]] <- factor(x, levels = full)
+  }
+  aligned
 }
 
 # Build the `guide` argument for a metadata band's fill scale.
@@ -168,8 +209,8 @@
 # Draw the per-sample metadata sidebar (bands to the left or right of the rainbow).
 .add_sample_metadata <- function(p, prepped, sample_meta, sample_key, target_key,
                                  cols, side, width, height, gap, plot_gap, colors,
-                                 na_color, legend, legend_ncol, legend_nrow, labels,
-                                 target_labels, border) {
+                                 na_color, legend, legend_ncol, legend_nrow,
+                                 level_order, labels, target_labels, border) {
   side <- match.arg(side, c("left", "right"))
   if (is.null(cols)) cols <- setdiff(names(sample_meta), sample_key)
   bad <- setdiff(cols, names(sample_meta))
@@ -187,6 +228,7 @@
   aligned <- tibble::tibble(!!sample_key := samp_levels) %>%
     dplyr::left_join(sample_meta, by = sample_key)
   aligned[[".ypos"]] <- seq_along(samp_levels)
+  aligned <- .apply_level_order(aligned, cols, level_order)
 
   pal <- .merge_colors(.auto_meta_colors(aligned, cols), colors)
 
@@ -244,7 +286,7 @@
 .add_target_annotation <- function(p, prepped, target_meta, sample_key, target_key,
                                    cols, position, width, height, gap, plot_gap,
                                    colors, na_color, legend, legend_ncol, legend_nrow,
-                                   labels, sample_labels, border) {
+                                   level_order, labels, sample_labels, border) {
   position <- match.arg(position, c("top", "bottom"))
   if (is.null(cols)) cols <- setdiff(names(target_meta), target_key)
   bad <- setdiff(cols, names(target_meta))
@@ -262,6 +304,7 @@
   aligned <- tibble::tibble(!!target_key := tgt_levels) %>%
     dplyr::left_join(target_meta, by = target_key)
   aligned[[".xpos"]] <- seq_along(tgt_levels)
+  aligned <- .apply_level_order(aligned, cols, level_order)
 
   pal <- .merge_colors(.auto_meta_colors(aligned, cols), colors)
 
