@@ -8,7 +8,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/nickjhathaway/HaplotypeRainbows/blob/v2.0.0/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/nickjhathaway/HaplotypeRainbows/blob/main/DESCRIPTION)
 
 Hathaway N (2026). *HaplotypeRainbows: Creates Haplotype Rainbow Plots*.
 R package version 2.0.0,
