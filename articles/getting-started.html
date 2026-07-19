@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">HaplotypeRainbows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,7 @@
     <li><a class="dropdown-item" href="../articles/saving.html">Saving, sizing &amp; interactivity</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -62,7 +63,7 @@
       <h1>Getting started</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/nickjhathaway/HaplotypeRainbows/blob/main/vignettes/articles/getting-started.Rmd" class="external-link"><code>vignettes/articles/getting-started.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/nickjhathaway/HaplotypeRainbows/blob/v2.0.1/vignettes/articles/getting-started.Rmd" class="external-link"><code>vignettes/articles/getting-started.Rmd</code></a></small>
       <div class="d-none name"><code>getting-started.Rmd</code></div>
     </div>
 
@@ -160,23 +161,36 @@ handy when there are too many samples or targets to label:</p>
 <h2 id="accessing-the-prepped-data">Accessing the prepped data<a class="anchor" aria-label="anchor" href="#accessing-the-prepped-data"></a>
 </h2>
 <p><code>get_prepped()</code> returns the prepped table if you want to
-post-process the plot yourself or inspect the derived columns:</p>
+post-process the plot yourself or inspect the derived columns. It uses
+canonical column names — <code>sample</code>, <code>target</code>,
+<code>hapid</code> and <code>rel_abund</code> (raw counts), plus
+<code>within_sample_freq</code> / <code>total_abund</code> and the
+derived geometry/colour columns — regardless of your input column
+names:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">rb</span><span class="op">$</span><span class="fu">get_prepped</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 22</span></span></span>
-<span><span class="co">#&gt;   s_Sample p_name       h_popUID c_AveragedFrac totalAbund s_COI relAbundCol_mod</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 3D7      Pf01-014544… Pf01-01…              1          1     1             0.8</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 3D7      Pf01-017990… Pf01-01…              1          1     1             0.8</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 3D7      Pf01-018155… Pf01-01…              1          1     1             0.8</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 3D7      Pf01-049597… Pf01-04…              1          1     1             0.8</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> 3D7      Pf01-051219… Pf01-05…              1          1     1             0.8</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> 3D7      Pf01-053168… Pf01-05…              1          1     1             0.8</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 15 more variables: fracCumSum &lt;dbl&gt;, fracModCumSum &lt;dbl&gt;, fakeFrac &lt;dbl&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   fakeFracMod &lt;dbl&gt;, fakeFracCumSum &lt;dbl&gt;, fakeFracModCumSum &lt;dbl&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   samp_n &lt;int&gt;, popid &lt;int&gt;, maxPopid &lt;int&gt;, popidFrac &lt;dbl&gt;, hueMod &lt;dbl&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   popidPerc &lt;dbl&gt;, popidFracRegColor &lt;dbl&gt;, popidPercLog &lt;dbl&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   popidFracLogColor &lt;dbl&gt;</span></span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 23</span></span></span>
+<span><span class="co">#&gt;   sample target        hapid rel_abund total_abund within_sample_freq sample_coi</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 3D7    Pf01-0145449… Pf01…         1           1                  1          1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 3D7    Pf01-0179903… Pf01…         1           1                  1          1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 3D7    Pf01-0181557… Pf01…         1           1                  1          1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 3D7    Pf01-0495971… Pf01…         1           1                  1          1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> 3D7    Pf01-0512199… Pf01…         1           1                  1          1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> 3D7    Pf01-0531682… Pf01…         1           1                  1          1</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 16 more variables: within_sample_freq_mod &lt;dbl&gt;, freq_cumsum &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   freq_mod_cumsum &lt;dbl&gt;, fake_freq &lt;dbl&gt;, fake_freq_mod &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   fake_freq_cumsum &lt;dbl&gt;, fake_freq_mod_cumsum &lt;dbl&gt;, samp_n &lt;int&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   pop_id &lt;int&gt;, max_pop_id &lt;int&gt;, pop_id_frac &lt;dbl&gt;, hue_mod &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   pop_id_perc &lt;dbl&gt;, pop_id_frac_reg_color &lt;dbl&gt;, pop_id_perc_log &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   pop_id_frac_log_color &lt;dbl&gt;</span></span></span></code></pre></div>
+<p>To reconnect the prepped table to your source data, relabel those
+four columns back to your original names with
+<code>get_prepped(original_names = TRUE)</code>, or look up the mapping
+directly with <code>column_map()</code>:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">rb</span><span class="op">$</span><span class="fu">column_map</span><span class="op">(</span><span class="op">)</span>                     <span class="co"># canonical -&gt; your original column names</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">rb</span><span class="op">$</span><span class="fu">get_prepped</span><span class="op">(</span>original_names <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

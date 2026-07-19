@@ -8,16 +8,16 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/nickjhathaway/HaplotypeRainbows/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/nickjhathaway/HaplotypeRainbows/blob/v2.0.1/DESCRIPTION)
 
 Hathaway N (2026). *HaplotypeRainbows: Creates Haplotype Rainbow Plots*.
-R package version 2.0.0,
+R package version 2.0.1,
 <https://github.com/nickjhathaway/HaplotypeRainbows>.
 
     @Manual{,
       title = {HaplotypeRainbows: Creates Haplotype Rainbow Plots},
       author = {Nicholas Hathaway},
       year = {2026},
-      note = {R package version 2.0.0},
+      note = {R package version 2.0.1},
       url = {https://github.com/nickjhathaway/HaplotypeRainbows},
     }

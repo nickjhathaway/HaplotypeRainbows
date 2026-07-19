@@ -50,8 +50,8 @@ log-spaced (default) or linear hue:
 
 ``` r
 
-rb$plot(color_col = "popidFracLogColor")   # default (log-spaced hue)
-rb$plot(color_col = "popidFracRegColor")   # linear hue
+rb$plot(color_col = "pop_id_frac_log_color")   # default (log-spaced hue)
+rb$plot(color_col = "pop_id_frac_reg_color")   # linear hue
 ```
 
 ## Colour-blind-friendly palettes

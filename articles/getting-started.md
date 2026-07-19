@@ -127,23 +127,38 @@ rb$plot(x_axis_labels = FALSE, y_axis_labels = FALSE) # hide both
 ## Accessing the prepped data
 
 `get_prepped()` returns the prepped table if you want to post-process
-the plot yourself or inspect the derived columns:
+the plot yourself or inspect the derived columns. It uses canonical
+column names — `sample`, `target`, `hapid` and `rel_abund` (raw counts),
+plus `within_sample_freq` / `total_abund` and the derived
+geometry/colour columns — regardless of your input column names:
 
 ``` r
 
 head(rb$get_prepped())
-#> # A tibble: 6 × 22
-#>   s_Sample p_name       h_popUID c_AveragedFrac totalAbund s_COI relAbundCol_mod
-#>   <fct>    <fct>        <chr>             <dbl>      <dbl> <int>           <dbl>
-#> 1 3D7      Pf01-014544… Pf01-01…              1          1     1             0.8
-#> 2 3D7      Pf01-017990… Pf01-01…              1          1     1             0.8
-#> 3 3D7      Pf01-018155… Pf01-01…              1          1     1             0.8
-#> 4 3D7      Pf01-049597… Pf01-04…              1          1     1             0.8
-#> 5 3D7      Pf01-051219… Pf01-05…              1          1     1             0.8
-#> 6 3D7      Pf01-053168… Pf01-05…              1          1     1             0.8
-#> # ℹ 15 more variables: fracCumSum <dbl>, fracModCumSum <dbl>, fakeFrac <dbl>,
-#> #   fakeFracMod <dbl>, fakeFracCumSum <dbl>, fakeFracModCumSum <dbl>,
-#> #   samp_n <int>, popid <int>, maxPopid <int>, popidFrac <dbl>, hueMod <dbl>,
-#> #   popidPerc <dbl>, popidFracRegColor <dbl>, popidPercLog <dbl>,
-#> #   popidFracLogColor <dbl>
+#> # A tibble: 6 × 23
+#>   sample target        hapid rel_abund total_abund within_sample_freq sample_coi
+#>   <fct>  <fct>         <chr>     <dbl>       <dbl>              <dbl>      <int>
+#> 1 3D7    Pf01-0145449… Pf01…         1           1                  1          1
+#> 2 3D7    Pf01-0179903… Pf01…         1           1                  1          1
+#> 3 3D7    Pf01-0181557… Pf01…         1           1                  1          1
+#> 4 3D7    Pf01-0495971… Pf01…         1           1                  1          1
+#> 5 3D7    Pf01-0512199… Pf01…         1           1                  1          1
+#> 6 3D7    Pf01-0531682… Pf01…         1           1                  1          1
+#> # ℹ 16 more variables: within_sample_freq_mod <dbl>, freq_cumsum <dbl>,
+#> #   freq_mod_cumsum <dbl>, fake_freq <dbl>, fake_freq_mod <dbl>,
+#> #   fake_freq_cumsum <dbl>, fake_freq_mod_cumsum <dbl>, samp_n <int>,
+#> #   pop_id <int>, max_pop_id <int>, pop_id_frac <dbl>, hue_mod <dbl>,
+#> #   pop_id_perc <dbl>, pop_id_frac_reg_color <dbl>, pop_id_perc_log <dbl>,
+#> #   pop_id_frac_log_color <dbl>
+```
+
+To reconnect the prepped table to your source data, relabel those four
+columns back to your original names with
+`get_prepped(original_names = TRUE)`, or look up the mapping directly
+with `column_map()`:
+
+``` r
+
+rb$column_map()                     # canonical -> your original column names
+head(rb$get_prepped(original_names = TRUE))
 ```

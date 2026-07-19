@@ -62,7 +62,7 @@ den <- rb$get_dendrogram()      # as a dendrogram
 grp <- rb$cluster_groups(k = 6) # sample -> cluster
 head(grp)
 #> # A tibble: 6 × 2
-#>   s_Sample cluster
+#>   sample   cluster
 #>   <chr>    <fct>  
 #> 1 PG0401-C 1      
 #> 2 PG0400-C 1      

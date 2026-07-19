@@ -75,6 +75,8 @@ convention: `library_sample_name`, `target_name`, `seq` and `reads`.
 
 - [`HaplotypeRainbow$get_prepped()`](#method-HaplotypeRainbow-get_prepped)
 
+- [`HaplotypeRainbow$column_map()`](#method-HaplotypeRainbow-column_map)
+
 - [`HaplotypeRainbow$print()`](#method-HaplotypeRainbow-print)
 
 - [`HaplotypeRainbow$clone()`](#method-HaplotypeRainbow-clone)
@@ -514,8 +516,8 @@ Build the rainbow plot.
     HaplotypeRainbow$plot(
       style = NULL,
       colors = RColorBrewer::brewer.pal(11, "Spectral"),
-      color_col = "popidFracLogColor",
-      shade_col = "h_color_byFreq_mod",
+      color_col = "pop_id_frac_log_color",
+      shade_col = "h_color_by_freq_mod",
       rank_colors = FALSE,
       rank_palette = colorPalette_12,
       invariant_color = "#000000",
@@ -538,8 +540,8 @@ Build the rainbow plot.
 
 - `color_col`:
 
-  Column to map to fill for rainbow style ("popidFracLogColor" or
-  "popidFracRegColor").
+  Column to map to fill for rainbow style ("pop_id_frac_log_color" or
+  "pop_id_frac_reg_color").
 
 - `shade_col`:
 
@@ -1233,14 +1235,41 @@ object.
 ### `HaplotypeRainbow$get_prepped()`
 
 Return the prepped data frame (or `NULL` if `prep()` not yet called).
+The prepped table uses canonical column names (`sample`, `target`,
+`hapid`, `rel_abund`); set `original_names = TRUE` to relabel those four
+back to the column names supplied for the input data, so the result can
+be rejoined to the source data (see `$column_map()`).
 
 #### Usage
 
-    HaplotypeRainbow$get_prepped()
+    HaplotypeRainbow$get_prepped(original_names = FALSE)
+
+#### Arguments
+
+- `original_names`:
+
+  Relabel the canonical columns back to the user's originals.
 
 #### Returns
 
 A data frame.
+
+------------------------------------------------------------------------
+
+### `HaplotypeRainbow$column_map()`
+
+Return the key mapping the canonical internal column names (`sample`,
+`target`, `hapid`, `rel_abund`) used in the prepped table to the
+original column names supplied for the input data. Use it to relabel
+prepped data and reconnect it to the source input.
+
+#### Usage
+
+    HaplotypeRainbow$column_map()
+
+#### Returns
+
+A named character vector (names = canonical, values = original).
 
 ------------------------------------------------------------------------
 

@@ -16,7 +16,7 @@ Useful links:
 
 - <https://github.com/nickjhathaway/HaplotypeRainbows>
 
-- <https://nickjhathaway.github.io/HaplotypeRainbows>
+- <https://nickjhathaway.github.io/HaplotypeRainbows/>
 
 - Report bugs at
   <https://github.com/nickjhathaway/HaplotypeRainbows/issues>

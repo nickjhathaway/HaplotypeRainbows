@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">HaplotypeRainbows</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,7 @@
     <li><a class="dropdown-item" href="../articles/saving.html">Saving, sizing &amp; interactivity</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -62,7 +63,7 @@
       <h1>Colours &amp; plot styles</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/nickjhathaway/HaplotypeRainbows/blob/main/vignettes/articles/colours.Rmd" class="external-link"><code>vignettes/articles/colours.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/nickjhathaway/HaplotypeRainbows/blob/v2.0.1/vignettes/articles/colours.Rmd" class="external-link"><code>vignettes/articles/colours.Rmd</code></a></small>
       <div class="d-none name"><code>colours.Rmd</code></div>
     </div>
 
@@ -104,8 +105,8 @@ match <code>color_period</code>):</p>
 <p>The fill can be driven by either colour column from the prep —
 log-spaced (default) or linear hue:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">rb</span><span class="op">$</span><span class="fu">plot</span><span class="op">(</span>color_col <span class="op">=</span> <span class="st">"popidFracLogColor"</span><span class="op">)</span>   <span class="co"># default (log-spaced hue)</span></span>
-<span><span class="va">rb</span><span class="op">$</span><span class="fu">plot</span><span class="op">(</span>color_col <span class="op">=</span> <span class="st">"popidFracRegColor"</span><span class="op">)</span>   <span class="co"># linear hue</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">rb</span><span class="op">$</span><span class="fu">plot</span><span class="op">(</span>color_col <span class="op">=</span> <span class="st">"pop_id_frac_log_color"</span><span class="op">)</span>   <span class="co"># default (log-spaced hue)</span></span>
+<span><span class="va">rb</span><span class="op">$</span><span class="fu">plot</span><span class="op">(</span>color_col <span class="op">=</span> <span class="st">"pop_id_frac_reg_color"</span><span class="op">)</span>   <span class="co"># linear hue</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="colour-blind-friendly-palettes">Colour-blind-friendly palettes<a class="anchor" aria-label="anchor" href="#colour-blind-friendly-palettes"></a>
