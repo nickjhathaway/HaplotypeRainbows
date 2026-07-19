@@ -1,0 +1,14 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.github$
+^\.claude$
+^LICENSE\.md$
+^images$
+^README\.Rmd$
+^_pkgdown\.yml$
+^docs$
+^vignettes/articles$
+^pkgdown$
+^\.gitignore$
+^data-raw$
+^Rplots\.pdf$
