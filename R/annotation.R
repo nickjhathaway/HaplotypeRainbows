@@ -95,6 +95,41 @@
   gtable::gtable_filter(gt, "guide-box")
 }
 
+# Estimate the natural size (inches) of a legend grob, so it can be exported without
+# clipping. The guide-box's own widths can be a flexible (null) cell whose real content
+# lives in a nested gtable, so we recurse and take the largest absolute size found.
+# Measured on a throwaway device so text-based (grobwidth) units resolve.
+.legend_grob_size <- function(legend, margin = 0.2) {
+  tf <- tempfile(fileext = ".pdf")
+  grDevices::pdf(tf, width = 50, height = 50)
+  on.exit({
+    grDevices::dev.off()
+    unlink(tf)
+  }, add = TRUE)
+  measure <- function(g) {
+    w <- tryCatch(grid::convertWidth(sum(g$widths), "in", valueOnly = TRUE),
+                  error = function(e) 0)
+    h <- tryCatch(grid::convertHeight(sum(g$heights), "in", valueOnly = TRUE),
+                  error = function(e) 0)
+    if (!is.finite(w)) w <- 0
+    if (!is.finite(h)) h <- 0
+    if (!is.null(g$grobs)) {
+      for (ch in g$grobs) {
+        if (inherits(ch, "gtable")) {
+          s <- measure(ch)
+          w <- max(w, s[[1]])
+          h <- max(h, s[[2]])
+        }
+      }
+    }
+    c(w, h)
+  }
+  sz <- measure(legend)
+  w <- if (sz[[1]] > 0) sz[[1]] else 6
+  h <- if (sz[[2]] > 0) sz[[2]] else 8
+  c(width = w + 2 * margin, height = h + 2 * margin)
+}
+
 # Draw the per-sample metadata sidebar (bands to the left or right of the rainbow).
 .add_sample_metadata <- function(p, prepped, sample_meta, sample_key, target_key,
                                  cols, side, width, height, gap, plot_gap, colors,

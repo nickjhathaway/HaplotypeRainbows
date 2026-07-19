@@ -270,7 +270,9 @@ one per target-metadata column.
 p <- rb$plot(x_axis_labels = FALSE, y_axis_labels = FALSE)
 p <- rb$add_sample_metadata(p, cols = c("region", "country"), width = 3, gap = 0.5,
                             target_labels = FALSE)
-p <- rb$add_target_annotation(p, cols = "class", height = 2, sample_labels = FALSE)
+# two stacked target layers: class (innermost) then chrom
+p <- rb$add_target_annotation(p, cols = c("class", "chrom"), height = 2, gap = 0.5,
+                              sample_labels = FALSE)
 p
 ```
 
@@ -282,9 +284,11 @@ samples) and uses `cairo_pdf` by default (which keeps hyphens as hyphens). Pass
 size if you want it for a Quarto chunk.
 
 ```{r save, eval = FALSE}
-rb$dims()                                   # list(width, height) in inches
-rb$save_pdf(p, "rainbow.pdf")               # auto-sized, cairo device
-rb$save_pdf(p, "rainbow.pdf", device = "pdf", extra_width = 4)  # base device
+rb$dims()                                     # list(width, height) in inches
+rb$save_pdf(p, "rainbow.pdf")                 # auto-sized, cairo device
+rb$save_pdf(p, "rainbow.pdf", device = "pdf") # base pdf device
+# reserve room for the legend too (off by default):
+rb$save_pdf(p, "rainbow.pdf", size_include_legend = TRUE)
 ```
 
 ## Accessing the prepped data
