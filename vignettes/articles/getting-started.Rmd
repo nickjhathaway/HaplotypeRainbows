@@ -1,0 +1,115 @@
+---
+title: "Getting started"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 12,
+  fig.height = 8,
+  dpi = 100,
+  out.width = "100%"
+)
+```
+
+HaplotypeRainbows builds haplotype **"rainbow"** plots from targeted-amplicon
+(microhaplotype) data: a grid where **columns are targets** and **rows are samples**, and
+each cell shows the within-sample haplotype composition. Haplotype colours rotate across
+targets to produce the characteristic rainbow.
+
+Everything hangs off one R6 class, `HaplotypeRainbow`, which carries your column mapping
+so you only set it once. This article covers the essentials; the other articles go deep
+on [colours](colours.html), [metadata](metadata.html),
+[clustering & splitting](clustering.html), and [saving & interactivity](saving.html).
+
+```{r setup}
+library(HaplotypeRainbows)
+library(ggplot2)
+
+# example data (uses the older SeekDeep column names)
+data("pfisolateExample")
+```
+
+## Constructing the object
+
+You need four columns: a **sample** id, a **target** id, a within-target **haplotype** id,
+and a **relative count** (raw counts are fine — they're normalised to within-sample
+fractions internally). The defaults follow the Portable Microhaplotype Object (PMO)
+convention (`library_sample_name` / `target_name` / `seq` / `reads`); the example data
+uses the older SeekDeep names, so we pass them explicitly.
+
+```{r construct}
+rb <- HaplotypeRainbow$new(
+  pfIsosHeomeV1,
+  sample_col    = "s_Sample",
+  target_col    = "p_name",
+  popuid_col    = "h_popUID",
+  rel_abund_col = "c_AveragedFrac"
+)
+rb
+```
+
+`haplotype_rainbow()` is an identical convenience constructor for PMO-named tables:
+
+```{r construct-wrapper, eval = FALSE}
+rb <- haplotype_rainbow(my_pmo_allele_table)   # PMO column names, no mapping needed
+```
+
+**Chaining.** Transforming methods (`prep()`, `prep_shade()`, `sort_*()`,
+`set_sample_order()`, `add_cluster_gaps()`) mutate the object and return it invisibly, so
+they chain. `plot()` and the `add_*()` helpers return a ggplot.
+
+```{r chain, eval = FALSE}
+rb$prep(sort = "population_rank")$sort_by_clustering()$plot()
+```
+
+## Prepping: haplotype ordering
+
+`prep()` must be called before plotting. `sort` controls how haplotypes stack within each
+cell:
+
+```{r prep-population}
+rb$prep(sort = "population_rank")   # order by population rank (default)
+rb$plot()
+```
+
+```{r prep-frac}
+rb$prep(sort = "within_sample_freq")   # order by within-sample fraction
+rb$plot()
+```
+
+Other `prep()` knobs — `min_pop_size` drops sparse targets, `color_period` sets the
+rainbow period (see the [colours article](colours.html)), and `bar_height < 1` leaves a
+gap between sample rows:
+
+```{r prep-barheight}
+rb$prep(sort = "population_rank", bar_height = 0.6)   # thinner bars, more row gap
+rb$plot(x_axis_labels = FALSE)
+```
+
+## Axis labels
+
+Target names (x) and sample names (y) show by default. Toggle either off — the plot keeps
+tight margins with no leftover ticks, which is handy when there are too many samples or
+targets to label:
+
+```{r axis-toggle}
+rb$prep(sort = "population_rank")
+rb$plot(x_axis_labels = FALSE)                        # hide target names
+```
+
+```{r axis-toggle-both}
+rb$plot(x_axis_labels = FALSE, y_axis_labels = FALSE) # hide both
+```
+
+## Accessing the prepped data
+
+`get_prepped()` returns the prepped table if you want to post-process the plot yourself or
+inspect the derived columns:
+
+```{r get-prepped}
+head(rb$get_prepped())
+```

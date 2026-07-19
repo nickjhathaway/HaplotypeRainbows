@@ -1,125 +1,173 @@
 # Haplotype Rainbows
 
-version v1.1.0
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/nickjhathaway/HaplotypeRainbows/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/nickjhathaway/HaplotypeRainbows/actions/workflows/R-CMD-check.yaml)
+[![Docs](https://img.shields.io/badge/docs-pkgdown-blue.svg)](https://nickjhathaway.github.io/HaplotypeRainbows/)
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![License: GPL-3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+<!-- badges: end -->
 
+version v2.0.0
 
-This is a collection of tools in R to create haplotype "rainbows" with a myriad input as opposed to SNP barcodes which only have binary input. 
+A collection of tools in R to create haplotype "rainbows" from targeted amplicon
+(microhaplotype) sequencing data. Unlike SNP barcodes, which are binary, these plots
+handle arbitrary within-sample haplotype composition. Columns are targets, rows are
+samples, and each cell shows the within-sample relative abundance of each haplotype,
+coloured so that the dominant haplotype hue rotates across targets — producing the
+characteristic "rainbow".
 
-# Install  
+> **v2.0.0 is a breaking change.** The old standalone functions (`prepForRainbow`,
+> `genRainbowHapPlotObj`, …) have been replaced by a single R6 class,
+> `HaplotypeRainbow`, that carries your column mapping so you only set it once.
+> Column defaults now follow the [PMO](https://plasmogenepi.github.io/PMO_Docs/)
+> convention rather than SeekDeep.
 
-Install the most recent release using devtools  
+# Documentation
+
+📖 Full documentation, function reference, and a gallery of worked examples live on the
+package website:
+
+**<https://nickjhathaway.github.io/HaplotypeRainbows/>**
+
+The [Articles](https://nickjhathaway.github.io/HaplotypeRainbows/articles/) cover
+[getting started](https://nickjhathaway.github.io/HaplotypeRainbows/articles/getting-started.html),
+[colours & plot styles](https://nickjhathaway.github.io/HaplotypeRainbows/articles/colours.html),
+[sample & target metadata](https://nickjhathaway.github.io/HaplotypeRainbows/articles/metadata.html),
+[clustering & splitting plots](https://nickjhathaway.github.io/HaplotypeRainbows/articles/clustering.html),
+and [saving & interactivity](https://nickjhathaway.github.io/HaplotypeRainbows/articles/saving.html).
+
+# Install
 
 ```r
+# most recent release
 devtools::install_github('nickjhathaway/HaplotypeRainbows')
-```
-Or the developmental branch 
 
-```r
+# development branch
 devtools::install_github('nickjhathaway/HaplotypeRainbows@develop')
 ```
 
-# Input 
+# Input
 
-The tools need a minimum of 4 columns 
+The tools need a minimum of 4 columns:
 
-1.  Sample name column
-2.  A loci name column 
-3.  A population id for the haplotype for that loci
-4.  A within sample relative abundance of the haplotype
+1. Sample name
+2. Target / locus name
+3. A within-target haplotype identifier
+4. A within-sample relative abundance (raw counts are fine — they are normalised
+   internally)
 
+The column defaults follow the **Portable Microhaplotype Object (PMO)** convention:
 
-These tools were developed to work with [SeekDeep](https://github.com/bailey-lab/SeekDeep) data output and so it assumes the default for the columns above are as follows:
+| Role                     | Default column        |
+|--------------------------|-----------------------|
+| Sample name              | `library_sample_name` |
+| Target / locus name      | `target_name`         |
+| Haplotype identifier     | `seq`                 |
+| Relative counts          | `reads`               |
 
+You can override any of these when constructing the object.
 
-1.  **s_Sample** - Sample name column
-2.  **p_name** - A loci name column 
-3.  **h_popUID** - A population id for the haplotype for that loci
-4.  **c_AveragedFrac** - A within sample relative abundance of the haplotype
+# Usage
 
-But you can specify column names when using the functions HaplotypeRainbows
+Everything runs through the `HaplotypeRainbow` R6 class. Transforming methods
+(`prep()`, `sort_by_clustering()`, `set_sample_order()`, `sort_alphabetical()`)
+mutate the object and return it, so they can be chained; `plot()` returns a
+`ggplot` object you can print, `ggsave()` or hand to `plotly::ggplotly()`.
 
-## Prep
-There are two main steps for creating the haplotypes, first is to process the input data to create new data table to create the figures from. The library relies heavily on the [tidyverse](https://www.tidyverse.org/) library.  
-
-Below uses example data set from *Plasmodium falciparum* lab isolates and mixtures  
- 
 ```r
 library(HaplotypeRainbows)
 
-# load example data 
-data("pfisolateExample") 
+# load example data (uses the older SeekDeep column names)
+data("pfisolateExample")
 
-#prep data 
-pfIsosHeomeV1_prep = prepForRainbow(pfIsosHeomeV1)
- 
-#prep data when columns have other than default names 
+# construct with your column mapping (only needed once)
+rb <- HaplotypeRainbow$new(
+  pfIsosHeomeV1,
+  sample_col    = "s_Sample",
+  target_col    = "p_name",
+  popuid_col    = "h_popUID",
+  rel_abund_col = "c_AveragedFrac"
+)
 
-pfIsosHeomeV1_otherName_prep = prepForRainbow(pfIsosHeomeV1_otherName,
-                                              sampleCol = Sample, 
-                                              targetCol = loci, 
-                                              popUIDCol = ID, 
-                                              relAbundCol = freq)
-
+# prep + plot
+rb$prep(sort = "population_rank")
+rb$plot()
 ```
 
-## Plotting  
-
-Below creates a ggplot object from the prep data, this object can either be plotted or further manipulated as needed first  
+If your data already uses the PMO column names, no mapping is needed:
 
 ```r
-genRainbowHapPlotObj(pfIsosHeomeV1_prep)
-
-genRainbowHapPlotObj(pfIsosHeomeV1_otherName_prep,
-                                              sampleCol = Sample, 
-                                              targetCol = loci, 
-                                              popUIDCol = ID, 
-                                              relAbundCol = freq) 
-
+rb <- HaplotypeRainbow$new(my_pmo_allele_table)   # or haplotype_rainbow(my_pmo_allele_table)
+rb$prep()$plot()
 ```
 
-This creates a plot where with samples on the y-axis and targets/loci on the x-axis. The within sample frequencies will be taken into account and will adjust the bars accordingly. The colors have meaning in each column, e.g. the same color within a column is the same haplotype, but colors across columns don't relate to each other. 
-
-The package was developed so the colors denoting each major haplotype slightly in hue in each column/loci which ends up creating a repeating "rainbow" across (with default period of 11). 
+The colours have meaning within each column (same colour = same haplotype for that
+target), but not across columns. The dominant-haplotype hue steps across targets with a
+period (default 11) to create the rainbow.
 
 ![example](images/default_example.png)
 
-### Manipulating plotting  
+## Sorting samples
 
-#### Sample Order 
-
-By default the samples are sorted by default character sorting but you can manipulate the order of the samples by the change the order of the factor levels of the samples, for example if you want to change the order so that samples sharing similar haplotypes were next to each other
-
+Order samples so that similar samples (by haplotype sharing) sit next to each other
+using hierarchical clustering (ward.D2):
 
 ```r
-# select just the major haplotypes and cluster based on the sharing between
-pfIsosHeomeV1_prep_sp = pfIsosHeomeV1_prep %>% 
-  group_by(s_Sample, p_name) %>% 
-  filter(c_AveragedFrac == max(c_AveragedFrac)) %>% 
-  mutate(marker = 1) %>% 
-  group_by() %>% 
-  select(h_popUID, marker, s_Sample) %>%   
-  spread(h_popUID, marker, fill = 0)
-
-pfIsosHeomeV1_prep_sp_mat = as.matrix(pfIsosHeomeV1_prep_sp[,2:ncol(pfIsosHeomeV1_prep_sp)])
-rownames(pfIsosHeomeV1_prep_sp_mat) = pfIsosHeomeV1_prep_sp$s_Sample
-pfIsosHeomeV1_prep_sp_dist = dist(pfIsosHeomeV1_prep_sp_mat)
-pfIsosHeomeV1_prep_sp_dist_hclust = hclust(pfIsosHeomeV1_prep_sp_dist, method = "ward.D2")
-
-#rename the levels so they are in the order of the clustering 
-pfIsosHeomeV1_prep = pfIsosHeomeV1_prep %>% 
-  mutate(s_Sample = factor(s_Sample, levels = rownames(pfIsosHeomeV1_prep_sp_mat)[pfIsosHeomeV1_prep_sp_dist_hclust$order]))
-genRainbowHapPlotObj(pfIsosHeomeV1_prep)
-
+rb$prep(sort = "population_rank")$sort_by_clustering()
+rb$plot()
 ```
 
 ![example](images/sorted_default_example.png)
 
-#### Custom Colors  
-Instead of the using the default colors you can input your own color palette to use 
+Other ordering options:
 
 ```r
-genRainbowHapPlotObj(pfIsosHeomeV1_prep, colors = c("#F50300","#FF6E00","#FFEB01","#00CA1E","#0241FE","#FE00D4"))
+rb$sort_by_clustering(by_major_allele = TRUE)   # cluster on the major allele only
+rb$set_sample_order(c("3D7", "HB3", "..."))      # explicit order
+rb$sort_alphabetical()                            # default
+```
 
+## Custom colours
+
+Supply your own palette to `plot()`:
+
+```r
+rb$plot(colors = c("#F50300","#FF6E00","#FFEB01","#00CA1E","#0241FE","#FE00D4"))
 ```
 
 ![example](images/sorted_default_example_customColors.png)
+
+## Haplotype ordering
+
+`prep(sort = ...)` controls how haplotypes are ordered within each cell:
+
+- `"population_rank"` — order haplotypes by population rank (default)
+- `"within_sample_freq"` — order haplotypes by within-sample fraction
+
+## Shade plots
+
+Instead of a rotating rainbow, `prep_shade()` colours each target with shades of a
+per-target base colour. `plot()` automatically uses the shade colours:
+
+```r
+rb$prep_shade(min_pop_size = 1)
+rb$plot()
+```
+
+## Axis labels
+
+Target names (x) and sample names (y) are shown by default; toggle either off (the plot
+keeps tight margins with no leftover ticks):
+
+```r
+rb$plot(x_axis_labels = FALSE)                        # hide target names
+rb$plot(x_axis_labels = FALSE, y_axis_labels = FALSE) # hide both (e.g. many samples)
+```
+
+# Notes
+
+- Interactive tooltips: `plot()` carries the sample, target, haplotype and abundance
+  values as extra aesthetics so `plotly::ggplotly()` shows them on hover.
+- Migrating from v1.x: the class methods map onto the old functions
+  (`prep()` → `prepForRainbow*`, `plot()` → `genRainbowHapPlotObj*`,
+  `sort_by_clustering()` → `resort_prepped_samples_by_clustering`).
