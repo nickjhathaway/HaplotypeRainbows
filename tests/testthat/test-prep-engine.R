@@ -46,28 +46,28 @@ expect_prep_equal <- function(got, expected) {
 }
 
 test_that("population prep matches the original prepForRainbow", {
-  rb <- new_rb()$prep(sort = "population")
+  rb <- new_rb()$prep(sort = "population_rank")
   expect_prep_equal(rb$get_prepped(), fixture("prep_population.rds"))
 })
 
 test_that("frac prep matches the original prepForRainbowArrangedByFrac", {
-  rb <- new_rb()$prep(sort = "frac")
+  rb <- new_rb()$prep(sort = "within_sample_freq")
   expect_prep_equal(rb$get_prepped(), fixture("prep_frac.rds"))
 })
 
 test_that("shade prep matches the original prepForRainbowShade", {
-  rb <- new_rb()$prep(sort = "shade", min_pop_size = 1)
+  rb <- new_rb()$prep_shade(min_pop_size = 1)
   expect_prep_equal(rb$get_prepped(), fixture("prep_shade.rds"))
 })
 
 test_that("clustering reorder matches the original (population)", {
-  rb <- new_rb()$prep(sort = "population")$sort_by_clustering()
+  rb <- new_rb()$prep(sort = "population_rank")$sort_by_clustering()
   expect_identical(levels(rb$get_prepped()$s_Sample),
                    fixture("resort_population_levels.rds"))
 })
 
 test_that("clustering reorder matches the original (major allele)", {
-  rb <- new_rb()$prep(sort = "population")$sort_by_clustering(by_major_allele = TRUE)
+  rb <- new_rb()$prep(sort = "population_rank")$sort_by_clustering(by_major_allele = TRUE)
   expect_identical(levels(rb$get_prepped()$s_Sample),
                    fixture("resort_major_levels.rds"))
 })

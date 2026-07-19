@@ -27,6 +27,7 @@ rb$plot()
   \itemize{
     \item \href{#method-HaplotypeRainbow-initialize}{\code{HaplotypeRainbow$new()}}
     \item \href{#method-HaplotypeRainbow-prep}{\code{HaplotypeRainbow$prep()}}
+    \item \href{#method-HaplotypeRainbow-prep_shade}{\code{HaplotypeRainbow$prep_shade()}}
     \item \href{#method-HaplotypeRainbow-sort_by_clustering}{\code{HaplotypeRainbow$sort_by_clustering()}}
     \item \href{#method-HaplotypeRainbow-set_sample_order}{\code{HaplotypeRainbow$set_sample_order()}}
     \item \href{#method-HaplotypeRainbow-sort_alphabetical}{\code{HaplotypeRainbow$sort_alphabetical()}}
@@ -70,13 +71,44 @@ they are normalised to within-sample/target fractions internally).}
 \if{html}{\out{<a id="method-HaplotypeRainbow-prep"></a>}}
 \if{latex}{\out{\hypertarget{method-HaplotypeRainbow-prep}{}}}
 \subsection{\code{HaplotypeRainbow$prep()}}{
-  Prep the data for plotting. Stores the prepped table internally.
+  Prep the data for a rainbow plot (haplotype colours rotate across
+targets). Stores the prepped table internally.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{HaplotypeRainbow$prep(
-  sort = c("population", "frac", "shade"),
+  sort = c("population_rank", "within_sample_freq"),
   min_pop_size = 1,
   color_period = 11,
+  bar_height = 0.8
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{sort}}{Haplotype ordering within each cell: "population_rank" (order by
+population rank) or "within_sample_freq" (order by within-sample fraction).}
+      \item{\code{min_pop_size}}{Drop targets with fewer than this many unique haplotypes.}
+      \item{\code{color_period}}{Number of hue steps to rotate across targets.}
+      \item{\code{bar_height}}{Height of the full stacked bar per sample; < 1 leaves a gap.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    The object, invisibly (chainable).
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-prep_shade"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-prep_shade}{}}}
+\subsection{\code{HaplotypeRainbow$prep_shade()}}{
+  Prep the data for a shade plot (haplotypes shaded from a per-target
+base colour instead of a rotating rainbow). Stores the prepped table internally.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$prep_shade(
+  min_pop_size = 1,
   bar_height = 0.8,
   base_colors = c("#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00", "#ffff33")
 )}
@@ -85,13 +117,9 @@ they are normalised to within-sample/target fractions internally).}
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{sort}}{One of "population" (haplotypes ordered by population rank),
-"frac" (ordered by within-sample fraction) or "shade" (colour by shading a
-per-target base colour instead of a rainbow).}
       \item{\code{min_pop_size}}{Drop targets with fewer than this many unique haplotypes.}
-      \item{\code{color_period}}{Number of hue steps to rotate across targets (rainbow modes).}
       \item{\code{bar_height}}{Height of the full stacked bar per sample; < 1 leaves a gap.}
-      \item{\code{base_colors}}{Base colours to shade from (shade mode only).}
+      \item{\code{base_colors}}{Base colours to generate the per-target shades from.}
     }
     \if{html}{\out{</div>}}
   }
@@ -177,7 +205,8 @@ samples for the clustering.}
   colors = RColorBrewer::brewer.pal(11, "Spectral"),
   color_col = "popidFracLogColor",
   shade_col = "h_color_byFreq_mod",
-  axis_labels = TRUE
+  x_axis_labels = TRUE,
+  y_axis_labels = TRUE
 )}
     \if{html}{\out{</div>}}
   }
@@ -191,7 +220,8 @@ from shade prep). Defaults to "shade" when the data was prepped with
       \item{\code{color_col}}{Column to map to fill for rainbow style
 ("popidFracLogColor" or "popidFracRegColor").}
       \item{\code{shade_col}}{Identity-colour column for shade style.}
-      \item{\code{axis_labels}}{Add target names on the x-axis and sample names on the y-axis.}
+      \item{\code{x_axis_labels}}{Show target names on the x-axis.}
+      \item{\code{y_axis_labels}}{Show sample names on the y-axis.}
     }
     \if{html}{\out{</div>}}
   }
