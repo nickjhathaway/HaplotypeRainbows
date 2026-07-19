@@ -29,8 +29,10 @@ Imports:
     tidyr,
     tibble,
     ggplot2 (>= 3.4.0),
+    ggnewscale,
     RColorBrewer,
     scales,
+    grDevices,
     stats
 Suggests:
     testthat (>= 3.0.0),
