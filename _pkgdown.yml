@@ -1,0 +1,30 @@
+url: https://nickjhathaway.github.io/HaplotypeRainbows
+
+template:
+  bootstrap: 5
+
+reference:
+- title: Package overview
+  contents:
+  - HaplotypeRainbows-package
+
+- title: Core class
+  desc: >
+    The HaplotypeRainbow R6 class carries your column mapping and builds the
+    plots; haplotype_rainbow() is a convenience constructor.
+  contents:
+  - HaplotypeRainbow
+  - haplotype_rainbow
+
+- title: Palettes
+  desc: Colour-blind-friendly categorical palettes.
+  contents:
+  - color_palettes
+
+- title: Example data
+  desc: Example Plasmodium falciparum isolate haplotype tables and metadata.
+  contents:
+  - pfIsosHeomeV1
+  - pfIsosHeomeV1_otherName
+  - pfIsosHeomeV1_sampleMeta
+  - pfIsosHeomeV1_targetMeta

@@ -125,6 +125,74 @@ HaplotypeRainbow <- R6::R6Class(
       invisible(self)
     },
 
+    #' @description Attach per-sample metadata to the object (used by the metadata
+    #'   sidebar and by `sort_samples_by_meta()`).
+    #' @param meta A data frame of sample metadata.
+    #' @param match_col Name of the column in `meta` that holds the sample identifiers.
+    #' @param cols Metadata columns to keep (default: all columns except `match_col`).
+    #' @param add If `FALSE` (default) replace any existing sample metadata; if `TRUE`
+    #'   merge these columns onto the existing sample metadata (joined on the samples).
+    #' @return The object, invisibly (chainable).
+    set_sample_meta = function(meta, match_col, cols = NULL, add = FALSE) {
+      private$set_meta("sample", meta, match_col, cols, add)
+    },
+
+    #' @description Attach per-target metadata to the object (used by the target
+    #'   annotation strip and by `sort_targets_by_meta()`).
+    #' @param meta A data frame of target metadata.
+    #' @param match_col Name of the column in `meta` that holds the target names.
+    #' @param cols Metadata columns to keep (default: all columns except `match_col`).
+    #' @param add If `FALSE` (default) replace any existing target metadata; if `TRUE`
+    #'   merge these columns onto the existing target metadata (joined on the targets).
+    #' @return The object, invisibly (chainable).
+    set_target_meta = function(meta, match_col, cols = NULL, add = FALSE) {
+      private$set_meta("target", meta, match_col, cols, add)
+    },
+
+    #' @description Return the stored sample metadata (or `NULL`).
+    #' @return A data frame.
+    get_sample_meta = function() private$sample_meta,
+
+    #' @description Return the stored target metadata (or `NULL`).
+    #' @return A data frame.
+    get_target_meta = function() private$target_meta,
+
+    #' @description Order samples by one or more sample-metadata columns. Samples with
+    #'   no metadata are placed at the end.
+    #' @param cols Character vector of sample-metadata column names to order by.
+    #' @param desc Sort descending instead of ascending.
+    #' @return The object, invisibly (chainable).
+    sort_samples_by_meta = function(cols, desc = FALSE) {
+      private$require_prepped()
+      private$prepped <- private$sort_by_meta("sample", cols, desc)
+      invisible(self)
+    },
+
+    #' @description Order targets by one or more target-metadata columns. Targets with
+    #'   no metadata are placed at the end.
+    #' @param cols Character vector of target-metadata column names to order by.
+    #' @param desc Sort descending instead of ascending.
+    #' @return The object, invisibly (chainable).
+    sort_targets_by_meta = function(cols, desc = FALSE) {
+      private$require_prepped()
+      private$prepped <- private$sort_by_meta("target", cols, desc)
+      invisible(self)
+    },
+
+    #' @description Set the target (column) order explicitly.
+    #' @param levels Character vector of target names in the desired order.
+    #' @return The object, invisibly (chainable).
+    set_target_order = function(levels) {
+      private$require_prepped()
+      tc <- private$cols$target
+      present <- levels(factor(dplyr::pull(private$prepped, dplyr::all_of(tc))))
+      ordered <- c(as.character(levels),
+                   setdiff(present, as.character(levels)))
+      private$prepped <- private$prepped %>%
+        dplyr::mutate("{tc}" := factor(.data[[tc]], levels = ordered))
+      invisible(self)
+    },
+
     #' @description Build the rainbow plot.
     #' @param style "rainbow" (gradient over rotating hues) or "shade" (identity colours
     #'   from shade prep). Defaults to "shade" when the data was prepped with
@@ -185,11 +253,84 @@ HaplotypeRainbow <- R6::R6Class(
     prepped = NULL,
     sort_mode = NULL,
     color_period = 11,
+    sample_meta = NULL,
+    target_meta = NULL,
 
     require_prepped = function() {
       if (is.null(private$prepped)) {
         stop("Call $prep() before this operation.", call. = FALSE)
       }
+    },
+
+    # Store sample/target metadata on the object. `kind` is "sample" or "target";
+    # the meta's `match_col` is renamed to the data's key column so downstream joins
+    # are uniform. Errors on missing columns; warns + NA-fills entities absent from meta.
+    set_meta = function(kind, meta, match_col, cols, add) {
+      stopifnot(is.data.frame(meta))
+      key_out <- if (kind == "sample") private$cols$sample else private$cols$target
+      if (!match_col %in% names(meta)) {
+        stop("match_col '", match_col, "' not found in the metadata table.",
+             call. = FALSE)
+      }
+      if (is.null(cols)) cols <- setdiff(names(meta), match_col)
+      missing_cols <- setdiff(cols, names(meta))
+      if (length(missing_cols)) {
+        stop("Metadata column(s) not found: ",
+             paste(missing_cols, collapse = ", "), call. = FALSE)
+      }
+      new_meta <- as.data.frame(meta)[, c(match_col, cols), drop = FALSE]
+      names(new_meta)[1] <- key_out
+      new_meta[[key_out]] <- as.character(new_meta[[key_out]])
+      new_meta <- new_meta[!duplicated(new_meta[[key_out]]), , drop = FALSE]
+
+      data_ids <- unique(as.character(
+        dplyr::pull(private$data, dplyr::all_of(key_out))
+      ))
+      missing_ids <- setdiff(data_ids, new_meta[[key_out]])
+      if (length(missing_ids)) {
+        show <- missing_ids[seq_len(min(5L, length(missing_ids)))]
+        warning(length(missing_ids), " ", kind,
+                "(s) in the data are missing from the metadata (filled with NA): ",
+                paste(show, collapse = ", "),
+                if (length(missing_ids) > 5L) ", ..." else "", call. = FALSE)
+      }
+
+      slot <- paste0(kind, "_meta")
+      if (isTRUE(add) && !is.null(private[[slot]])) {
+        private[[slot]] <- dplyr::full_join(private[[slot]], new_meta, by = key_out)
+      } else {
+        private[[slot]] <- new_meta
+      }
+      invisible(self)
+    },
+
+    # Reorder the sample (or target) factor of the prepped data by metadata columns.
+    sort_by_meta = function(kind, cols, desc) {
+      slot <- paste0(kind, "_meta")
+      meta <- private[[slot]]
+      if (is.null(meta)) {
+        stop("No ", kind, " metadata set; call $set_", kind, "_meta() first.",
+             call. = FALSE)
+      }
+      key <- if (kind == "sample") private$cols$sample else private$cols$target
+      bad <- setdiff(cols, setdiff(names(meta), key))
+      if (length(bad)) {
+        stop(kind, " metadata column(s) not found: ",
+             paste(bad, collapse = ", "), call. = FALSE)
+      }
+      present <- levels(factor(dplyr::pull(private$prepped, dplyr::all_of(key))))
+      keys <- lapply(cols, function(cc) {
+        s <- rlang::sym(cc)
+        if (isTRUE(desc)) rlang::expr(dplyr::desc(!!s)) else s
+      })
+      ordered <- meta %>%
+        dplyr::filter(.data[[key]] %in% present) %>%
+        dplyr::arrange(!!!keys) %>%
+        dplyr::pull(dplyr::all_of(key))
+      ordered <- as.character(ordered)
+      ordered <- c(ordered, setdiff(present, ordered))
+      private$prepped %>%
+        dplyr::mutate("{key}" := factor(.data[[key]], levels = ordered))
     },
 
     # Port of the historical resort_prepped_samples_by_clustering().

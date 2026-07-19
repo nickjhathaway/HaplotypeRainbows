@@ -39,6 +39,8 @@ Suggests:
     plotly,
     pkgdown
 Config/testthat/edition: 3
-URL: https://github.com/nickjhathaway/HaplotypeRainbows
+Config/Needs/website: pkgdown
+URL: https://github.com/nickjhathaway/HaplotypeRainbows,
+    https://nickjhathaway.github.io/HaplotypeRainbows
 BugReports: https://github.com/nickjhathaway/HaplotypeRainbows/issues
 Config/roxygen2/version: 8.0.0

@@ -29,3 +29,39 @@
 #' }
 #' @source SeekDeep output; see <https://github.com/bailey-lab/SeekDeep>.
 "pfIsosHeomeV1_otherName"
+
+#' Example sample metadata for [pfIsosHeomeV1]
+#'
+#' Per-sample metadata for the samples in [pfIsosHeomeV1], for demonstrating the
+#' sample-metadata sidebar. Subset to the example samples with columns that are
+#' constant across the subset dropped. The `sample` column matches `pfIsosHeomeV1`'s
+#' `s_Sample`.
+#'
+#' @format A data frame with 61 rows (one per sample):
+#' \describe{
+#'   \item{sample}{Sample identifier (matches `s_Sample`).}
+#'   \item{collection_date}{Collection date, where known.}
+#'   \item{country}{Country of origin.}
+#'   \item{site}{Collection site.}
+#'   \item{collection_year}{Collection year, where known.}
+#'   \item{region}{Geographic region.}
+#'   \item{subRegion}{Geographic sub-region.}
+#'   \item{secondaryRegion}{Broader (continent-level) region.}
+#' }
+"pfIsosHeomeV1_sampleMeta"
+
+#' Example target metadata for [pfIsosHeomeV1]
+#'
+#' Per-target metadata for the targets in [pfIsosHeomeV1], for demonstrating the
+#' target-annotation strip. The `target_name` column matches `pfIsosHeomeV1`'s `p_name`.
+#'
+#' @format A data frame with 100 rows (one per target):
+#' \describe{
+#'   \item{target_name}{Target / locus name (matches `p_name`).}
+#'   \item{gene_id}{Overlapping gene identifier.}
+#'   \item{gene_description}{Gene description.}
+#'   \item{group}{Whether the target is included or excluded ("include"/"exclude").}
+#'   \item{class}{Target class ("Diversity"/"Drug").}
+#'   \item{chrom}{Chromosome.}
+#' }
+"pfIsosHeomeV1_targetMeta"
