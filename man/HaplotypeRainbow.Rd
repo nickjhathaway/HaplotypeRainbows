@@ -619,6 +619,7 @@ the base device (e.g. on Windows, where the cairo device can misbehave).
   height = NULL,
   device = c("cairo", "pdf"),
   size_include_legend = FALSE,
+  bg = "transparent",
   ...
 )}
     \if{html}{\out{</div>}}
@@ -633,6 +634,7 @@ the base device (e.g. on Windows, where the cairo device can misbehave).
       \item{\code{device}}{"cairo" (default) or "pdf".}
       \item{\code{size_include_legend}}{If \code{TRUE} (and sizing automatically), enlarge the
 figure so the plot's legend fits too. Default \code{FALSE}.}
+      \item{\code{bg}}{Background colour of the device; defaults to "transparent".}
       \item{\code{...}}{Passed to the graphics device.}
     }
     \if{html}{\out{</div>}}
@@ -706,6 +708,7 @@ so it is not clipped.
   height = NULL,
   margin = 0.2,
   device = c("cairo", "pdf"),
+  bg = "transparent",
   ...
 )}
     \if{html}{\out{</div>}}
@@ -719,6 +722,7 @@ so it is not clipped.
       \item{\code{height}}{Height in inches (default: estimated from the legend).}
       \item{\code{margin}}{Inches of padding added around the estimated size.}
       \item{\code{device}}{"cairo" (default) or "pdf".}
+      \item{\code{bg}}{Background colour of the device; defaults to "transparent".}
       \item{\code{...}}{Passed to the graphics device.}
     }
     \if{html}{\out{</div>}}
