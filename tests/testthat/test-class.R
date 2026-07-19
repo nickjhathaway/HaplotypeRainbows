@@ -23,23 +23,37 @@ test_that("operations before prep() error clearly", {
 
 test_that("prep/sort return self (chainable) and plot returns a ggplot", {
   rb <- new_rb()
-  expect_identical(rb$prep(sort = "population"), rb)
+  expect_identical(rb$prep(sort = "population_rank"), rb)
   expect_identical(rb$sort_alphabetical(), rb)
   expect_s3_class(suppressWarnings(rb$plot()), "ggplot")
 })
 
 test_that("rainbow style rejects shade-prepped data and vice versa", {
-  expect_error(new_rb()$prep(sort = "shade")$plot(style = "rainbow"), "sort = 'population'")
-  expect_error(new_rb()$prep(sort = "population")$plot(style = "shade"), "sort = 'shade'")
+  expect_error(
+    new_rb()$prep_shade()$plot(style = "rainbow"), "prep\\(\\)"
+  )
+  expect_error(
+    new_rb()$prep(sort = "population_rank")$plot(style = "shade"), "prep_shade"
+  )
+})
+
+test_that("x/y axis labels can be toggled independently", {
+  rb <- new_rb()$prep(sort = "population_rank")
+  expect_s3_class(suppressWarnings(
+    rb$plot(x_axis_labels = FALSE, y_axis_labels = FALSE)
+  ), "ggplot")
+  expect_s3_class(suppressWarnings(
+    rb$plot(x_axis_labels = TRUE, y_axis_labels = FALSE)
+  ), "ggplot")
 })
 
 test_that("shade prep plots with identity fill by default", {
-  p <- suppressWarnings(new_rb()$prep(sort = "shade", min_pop_size = 1)$plot())
+  p <- suppressWarnings(new_rb()$prep_shade(min_pop_size = 1)$plot())
   expect_s3_class(p, "ggplot")
 })
 
 test_that("set_sample_order puts requested samples first", {
-  rb <- new_rb()$prep(sort = "population")
+  rb <- new_rb()$prep(sort = "population_rank")
   wanted <- c("3D7", "HB3")
   rb$set_sample_order(wanted)
   expect_identical(head(levels(rb$get_prepped()$s_Sample), 2), wanted)
