@@ -467,6 +467,7 @@ plot, using the metadata attached with \code{set_sample_meta()}.
   legend = TRUE,
   legend_ncol = NULL,
   legend_nrow = NULL,
+  level_order = NULL,
   labels = TRUE,
   target_labels = TRUE,
   border = "black"
@@ -492,6 +493,9 @@ the auto-assigned colours.}
       \item{\code{legend_ncol, legend_nrow}}{Number of columns / rows for the band legends,
 to keep tall legends on the page. A scalar applies to every band; a named
 vector (e.g. \code{c(country = 3)}) sets it per column.}
+      \item{\code{level_order}}{Optional named list giving the legend/level order for a
+column (e.g. \code{list(country = c("Uganda", "Kenya"))}); unlisted values are
+appended in sorted order.}
       \item{\code{labels}}{Draw the band (column-name) labels on the x-axis. Independent of
 \code{target_labels}, so band labels can stay on when target names are off.}
       \item{\code{target_labels}}{Keep the target names on the x-axis.}
@@ -525,6 +529,7 @@ rainbow plot, using the metadata attached with \code{set_target_meta()}.
   legend = TRUE,
   legend_ncol = NULL,
   legend_nrow = NULL,
+  level_order = NULL,
   labels = TRUE,
   sample_labels = TRUE,
   border = "black"
@@ -549,6 +554,8 @@ the auto-assigned colours.}
       \item{\code{legend}}{Draw a colour legend for each band.}
       \item{\code{legend_ncol, legend_nrow}}{Number of columns / rows for the band legends.
 A scalar applies to every band; a named vector sets it per column.}
+      \item{\code{level_order}}{Optional named list giving the legend/level order for a
+column; unlisted values are appended in sorted order.}
       \item{\code{labels}}{Draw the band (column-name) labels on the y-axis. Independent of
 \code{sample_labels}.}
       \item{\code{sample_labels}}{Keep the sample names on the y-axis.}

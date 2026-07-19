@@ -295,6 +295,9 @@ HaplotypeRainbow <- R6::R6Class(
     #' @param legend_ncol,legend_nrow Number of columns / rows for the band legends,
     #'   to keep tall legends on the page. A scalar applies to every band; a named
     #'   vector (e.g. `c(country = 3)`) sets it per column.
+    #' @param level_order Optional named list giving the legend/level order for a
+    #'   column (e.g. `list(country = c("Uganda", "Kenya"))`); unlisted values are
+    #'   appended in sorted order.
     #' @param labels Draw the band (column-name) labels on the x-axis. Independent of
     #'   `target_labels`, so band labels can stay on when target names are off.
     #' @param target_labels Keep the target names on the x-axis.
@@ -304,8 +307,8 @@ HaplotypeRainbow <- R6::R6Class(
                                    height = 1, gap = 0, plot_gap = 1, colors = NULL,
                                    na_color = "grey80", legend = TRUE,
                                    legend_ncol = NULL, legend_nrow = NULL,
-                                   labels = TRUE, target_labels = TRUE,
-                                   border = "black") {
+                                   level_order = NULL, labels = TRUE,
+                                   target_labels = TRUE, border = "black") {
       private$require_prepped()
       if (is.null(private$sample_meta)) {
         stop("No sample metadata set; call $set_sample_meta() first.", call. = FALSE)
@@ -313,7 +316,8 @@ HaplotypeRainbow <- R6::R6Class(
       .add_sample_metadata(p, private$prepped, private$sample_meta,
                            private$cols$sample, private$cols$target, cols, side,
                            width, height, gap, plot_gap, colors, na_color, legend,
-                           legend_ncol, legend_nrow, labels, target_labels, border)
+                           legend_ncol, legend_nrow, level_order, labels,
+                           target_labels, border)
     },
 
     #' @description Add a per-target annotation strip (coloured bands) above or below a
@@ -333,6 +337,8 @@ HaplotypeRainbow <- R6::R6Class(
     #' @param legend Draw a colour legend for each band.
     #' @param legend_ncol,legend_nrow Number of columns / rows for the band legends.
     #'   A scalar applies to every band; a named vector sets it per column.
+    #' @param level_order Optional named list giving the legend/level order for a
+    #'   column; unlisted values are appended in sorted order.
     #' @param labels Draw the band (column-name) labels on the y-axis. Independent of
     #'   `sample_labels`.
     #' @param sample_labels Keep the sample names on the y-axis.
@@ -342,8 +348,8 @@ HaplotypeRainbow <- R6::R6Class(
                                      height = 1, gap = 0, plot_gap = 1, colors = NULL,
                                      na_color = "grey80", legend = TRUE,
                                      legend_ncol = NULL, legend_nrow = NULL,
-                                     labels = TRUE, sample_labels = TRUE,
-                                     border = "black") {
+                                     level_order = NULL, labels = TRUE,
+                                     sample_labels = TRUE, border = "black") {
       private$require_prepped()
       if (is.null(private$target_meta)) {
         stop("No target metadata set; call $set_target_meta() first.", call. = FALSE)
@@ -351,7 +357,8 @@ HaplotypeRainbow <- R6::R6Class(
       .add_target_annotation(p, private$prepped, private$target_meta,
                              private$cols$sample, private$cols$target, cols, position,
                              width, height, gap, plot_gap, colors, na_color, legend,
-                             legend_ncol, legend_nrow, labels, sample_labels, border)
+                             legend_ncol, legend_nrow, level_order, labels,
+                             sample_labels, border)
     },
 
     #' @description Suggested figure dimensions (inches) for the current data, scaling

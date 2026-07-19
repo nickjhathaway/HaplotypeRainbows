@@ -124,9 +124,11 @@ rb$plot(color_col = "popidFracRegColor")   # linear hue
 
 `plot(rank_colors = TRUE)` colours haplotypes by a discrete rank (with a legend) instead
 of the continuous gradient. When there are more haplotype ranks than palette colours, a
-colour ramp is interpolated from the palette (dropping white/black and ordering by hue);
-if you prepped with `mark_invariant = TRUE`, single-haplotype (invariant) targets get
-their own colour (black by default). `get_rank_colors()` returns the rank -> colour map.
+colour ramp is interpolated from the palette (dropping white/black, ordering by hue, then
+reordering so consecutive ranks are as distinct as possible — so the most abundant ranks
+1, 2, 3 don't come out near-identical). If you prepped with `mark_invariant = TRUE`,
+single-haplotype (invariant) targets get their own colour (black by default).
+`get_rank_colors()` returns the rank -> colour map.
 
 ```{r rank-colors, fig.width = 14, fig.height = 9}
 rb$prep(sort = "population_rank", mark_invariant = TRUE)$sort_by_clustering()
@@ -237,14 +239,17 @@ Colours are auto-assigned from the colour-blind-friendly palettes; override any 
 with a named vector via `colors`. Turn legends off with `legend = FALSE`, or place the
 sidebar on the right with `side = "right"`.
 
-Use `plot_gap` to separate the bands from the cells, and `legend_ncol` / `legend_nrow`
-(a scalar for all bands, or a named vector per column) to keep big legends on the page:
+Use `plot_gap` to separate the bands from the cells, `legend_ncol` / `legend_nrow`
+(a scalar for all bands, or a named vector per column) to keep big legends on the page,
+and `level_order` (a named list per column) to control the legend entry order — any
+values you don't list are appended in sorted order:
 
 ```{r sidebar-tweaks, eval = FALSE}
 rb$add_sample_metadata(
   p, cols = c("region", "country"),
-  plot_gap    = 2,                        # separate the sidebar from the rainbow
-  legend_ncol = c(country = 4, region = 2)
+  plot_gap    = 2,                            # separate the sidebar from the rainbow
+  legend_ncol = c(country = 4, region = 2),
+  level_order = list(country = c("Uganda", "Kenya"))  # these first, rest sorted
 )
 ```
 
