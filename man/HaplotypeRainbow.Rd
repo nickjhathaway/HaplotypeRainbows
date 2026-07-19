@@ -39,6 +39,14 @@ rb$plot()
     \item \href{#method-HaplotypeRainbow-sort_targets_by_meta}{\code{HaplotypeRainbow$sort_targets_by_meta()}}
     \item \href{#method-HaplotypeRainbow-set_target_order}{\code{HaplotypeRainbow$set_target_order()}}
     \item \href{#method-HaplotypeRainbow-plot}{\code{HaplotypeRainbow$plot()}}
+    \item \href{#method-HaplotypeRainbow-get_rank_colors}{\code{HaplotypeRainbow$get_rank_colors()}}
+    \item \href{#method-HaplotypeRainbow-add_sample_metadata}{\code{HaplotypeRainbow$add_sample_metadata()}}
+    \item \href{#method-HaplotypeRainbow-add_target_annotation}{\code{HaplotypeRainbow$add_target_annotation()}}
+    \item \href{#method-HaplotypeRainbow-dims}{\code{HaplotypeRainbow$dims()}}
+    \item \href{#method-HaplotypeRainbow-save_pdf}{\code{HaplotypeRainbow$save_pdf()}}
+    \item \href{#method-HaplotypeRainbow-drop_legends}{\code{HaplotypeRainbow$drop_legends()}}
+    \item \href{#method-HaplotypeRainbow-extract_legend}{\code{HaplotypeRainbow$extract_legend()}}
+    \item \href{#method-HaplotypeRainbow-save_legend_pdf}{\code{HaplotypeRainbow$save_legend_pdf()}}
     \item \href{#method-HaplotypeRainbow-get_prepped}{\code{HaplotypeRainbow$get_prepped()}}
     \item \href{#method-HaplotypeRainbow-print}{\code{HaplotypeRainbow$print()}}
     \item \href{#method-HaplotypeRainbow-clone}{\code{HaplotypeRainbow$clone()}}
@@ -86,7 +94,8 @@ targets). Stores the prepped table internally.
   sort = c("population_rank", "within_sample_freq"),
   min_pop_size = 1,
   color_period = 11,
-  bar_height = 0.8
+  bar_height = 0.8,
+  mark_invariant = FALSE
 )}
     \if{html}{\out{</div>}}
   }
@@ -98,6 +107,8 @@ population rank) or "within_sample_freq" (order by within-sample fraction).}
       \item{\code{min_pop_size}}{Drop targets with fewer than this many unique haplotypes.}
       \item{\code{color_period}}{Number of hue steps to rotate across targets.}
       \item{\code{bar_height}}{Height of the full stacked bar per sample; < 1 leaves a gap.}
+      \item{\code{mark_invariant}}{Flag single-haplotype (invariant) targets so that
+\code{plot(rank_colors = TRUE)} can colour them separately (black by default).}
     }
     \if{html}{\out{</div>}}
   }
@@ -366,6 +377,10 @@ no metadata are placed at the end.
   colors = RColorBrewer::brewer.pal(11, "Spectral"),
   color_col = "popidFracLogColor",
   shade_col = "h_color_byFreq_mod",
+  rank_colors = FALSE,
+  rank_palette = colorPalette_12,
+  invariant_color = "#000000",
+  rank_legend_title = "Microhaplotype Rank",
   x_axis_labels = TRUE,
   y_axis_labels = TRUE
 )}
@@ -381,6 +396,15 @@ from shade prep). Defaults to "shade" when the data was prepped with
       \item{\code{color_col}}{Column to map to fill for rainbow style
 ("popidFracLogColor" or "popidFracRegColor").}
       \item{\code{shade_col}}{Identity-colour column for shade style.}
+      \item{\code{rank_colors}}{Colour haplotypes by a discrete rank (with a legend) instead
+of the continuous rainbow gradient. When there are more ranks than palette
+colours, a colour ramp is interpolated from the palette (with a warning);
+invariant targets (see \code{prep(mark_invariant = TRUE)}) get \code{invariant_color}.
+Replaces the old harvest-fills-from-\code{ggplot_build} recipe.}
+      \item{\code{rank_palette}}{Colours for haplotype ranks 1, 2, ... (rank colouring); if
+there are more ranks than colours, a ramp is interpolated from these.}
+      \item{\code{invariant_color}}{Colour for invariant (single-haplotype) targets.}
+      \item{\code{rank_legend_title}}{Legend title used with \code{rank_colors}.}
       \item{\code{x_axis_labels}}{Show target names on the x-axis.}
       \item{\code{y_axis_labels}}{Show sample names on the y-axis.}
     }
@@ -388,6 +412,330 @@ from shade prep). Defaults to "shade" when the data was prepped with
   }
   \subsection{Returns}{
     A \link[ggplot2:ggplot]{ggplot2::ggplot} object.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-get_rank_colors"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-get_rank_colors}{}}}
+\subsection{\code{HaplotypeRainbow$get_rank_colors()}}{
+  Return the discrete rank -> colour map used by
+\code{plot(rank_colors = TRUE)} (haplotype ranks plus the invariant colour). When
+there are more ranks than palette colours a ramp is interpolated.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$get_rank_colors(
+  n_ranks = NULL,
+  rank_palette = colorPalette_12,
+  invariant_color = "#000000"
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{n_ranks}}{Number of ranks to produce colours for (default: the maximum
+haplotype rank in the prepped data, or the palette length if not prepped).}
+      \item{\code{rank_palette}}{Colours for ranks 1, 2, ...}
+      \item{\code{invariant_color}}{Colour for invariant targets.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A named character vector.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-add_sample_metadata"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-add_sample_metadata}{}}}
+\subsection{\code{HaplotypeRainbow$add_sample_metadata()}}{
+  Add a per-sample metadata sidebar (coloured bands) to a rainbow
+plot, using the metadata attached with \code{set_sample_meta()}.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$add_sample_metadata(
+  p,
+  cols = NULL,
+  side = "left",
+  width = 1,
+  height = 1,
+  gap = 0,
+  plot_gap = 1,
+  colors = NULL,
+  na_color = "grey80",
+  legend = TRUE,
+  legend_ncol = NULL,
+  legend_nrow = NULL,
+  level_order = NULL,
+  labels = TRUE,
+  target_labels = TRUE,
+  border = "black"
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{p}}{A ggplot returned by \code{plot()}.}
+      \item{\code{cols}}{Metadata columns to draw (default: all in the sample-metadata slot),
+one band each, in order outward from the plot.}
+      \item{\code{side}}{"left" or "right" of the rainbow.}
+      \item{\code{width}}{Band width in cell units (1 = one rainbow cell wide).}
+      \item{\code{height}}{Band height as a fraction of a cell (1 = full cell, centred).}
+      \item{\code{gap}}{Gap between bands in cell units (0 = flush).}
+      \item{\code{plot_gap}}{Gap in cell units between the rainbow cells and the first band
+(0 = flush against the plot).}
+      \item{\code{colors}}{Optional named list (per column) of value -> colour to override
+the auto-assigned colours.}
+      \item{\code{na_color}}{Fill for samples missing that metadata value.}
+      \item{\code{legend}}{Draw a colour legend for each band.}
+      \item{\code{legend_ncol, legend_nrow}}{Number of columns / rows for the band legends,
+to keep tall legends on the page. A scalar applies to every band; a named
+vector (e.g. \code{c(country = 3)}) sets it per column.}
+      \item{\code{level_order}}{Optional named list giving the legend/level order for a
+column (e.g. \code{list(country = c("Uganda", "Kenya"))}); unlisted values are
+appended in sorted order.}
+      \item{\code{labels}}{Draw the band (column-name) labels on the x-axis. Independent of
+\code{target_labels}, so band labels can stay on when target names are off.}
+      \item{\code{target_labels}}{Keep the target names on the x-axis.}
+      \item{\code{border}}{Border colour for the band rectangles.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A \link[ggplot2:ggplot]{ggplot2::ggplot} object.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-add_target_annotation"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-add_target_annotation}{}}}
+\subsection{\code{HaplotypeRainbow$add_target_annotation()}}{
+  Add a per-target annotation strip (coloured bands) above or below a
+rainbow plot, using the metadata attached with \code{set_target_meta()}.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$add_target_annotation(
+  p,
+  cols = NULL,
+  position = "top",
+  width = 1,
+  height = 1,
+  gap = 0,
+  plot_gap = 1,
+  colors = NULL,
+  na_color = "grey80",
+  legend = TRUE,
+  legend_ncol = NULL,
+  legend_nrow = NULL,
+  level_order = NULL,
+  labels = TRUE,
+  sample_labels = TRUE,
+  border = "black"
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{p}}{A ggplot returned by \code{plot()}.}
+      \item{\code{cols}}{Metadata columns to draw (default: all in the target-metadata slot),
+one band each, stacked outward from the plot.}
+      \item{\code{position}}{"top" or "bottom" of the rainbow.}
+      \item{\code{width}}{Band width as a fraction of a cell (1 = full cell, centred).}
+      \item{\code{height}}{Band thickness in cell units (1 = one rainbow cell tall).}
+      \item{\code{gap}}{Gap between bands in cell units (0 = flush).}
+      \item{\code{plot_gap}}{Gap in cell units between the rainbow cells and the first band
+(0 = flush against the plot).}
+      \item{\code{colors}}{Optional named list (per column) of value -> colour to override
+the auto-assigned colours.}
+      \item{\code{na_color}}{Fill for targets missing that metadata value.}
+      \item{\code{legend}}{Draw a colour legend for each band.}
+      \item{\code{legend_ncol, legend_nrow}}{Number of columns / rows for the band legends.
+A scalar applies to every band; a named vector sets it per column.}
+      \item{\code{level_order}}{Optional named list giving the legend/level order for a
+column; unlisted values are appended in sorted order.}
+      \item{\code{labels}}{Draw the band (column-name) labels on the y-axis. Independent of
+\code{sample_labels}.}
+      \item{\code{sample_labels}}{Keep the sample names on the y-axis.}
+      \item{\code{border}}{Border colour for the band rectangles.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A \link[ggplot2:ggplot]{ggplot2::ggplot} object.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-dims"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-dims}{}}}
+\subsection{\code{HaplotypeRainbow$dims()}}{
+  Suggested figure dimensions (inches) for the current data, scaling
+width with the number of targets and height with the number of samples.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$dims(
+  p = NULL,
+  cell_width = 0.3,
+  cell_height = 0.3,
+  min_width = 6,
+  min_height = 6,
+  extra_width = 0,
+  extra_height = 0,
+  size_include_legend = FALSE
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{p}}{A ggplot; only needed when \code{size_include_legend = TRUE}.}
+      \item{\code{cell_width}}{Inches per target column.}
+      \item{\code{cell_height}}{Inches per sample row.}
+      \item{\code{min_width}}{Minimum width.}
+      \item{\code{min_height}}{Minimum height.}
+      \item{\code{extra_width}}{Padding added to width (e.g. for a sidebar).}
+      \item{\code{extra_height}}{Padding added to height (e.g. for a target strip).}
+      \item{\code{size_include_legend}}{If \code{TRUE}, enlarge the size to fit the plot's
+(bottom) legend as well: widen to at least the legend width and add the
+legend height. Requires \code{p}.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A list with \code{width} and \code{height} (inches).
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-save_pdf"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-save_pdf}{}}}
+\subsection{\code{HaplotypeRainbow$save_pdf()}}{
+  Save a plot to PDF, sized automatically from the data when \code{width} /
+\code{height} are not supplied. Uses \code{cairo_pdf} by default (which keeps hyphens as
+hyphens rather than converting them to en/em dashes); pass \code{device = "pdf"} for
+the base device (e.g. on Windows, where the cairo device can misbehave).
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$save_pdf(
+  p,
+  file,
+  width = NULL,
+  height = NULL,
+  device = c("cairo", "pdf"),
+  size_include_legend = FALSE,
+  bg = "transparent",
+  ...
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{p}}{A ggplot (e.g. from \code{plot()} or \code{add_sample_metadata()}).}
+      \item{\code{file}}{Output file path.}
+      \item{\code{width}}{Width in inches (default from \code{dims()}).}
+      \item{\code{height}}{Height in inches (default from \code{dims()}).}
+      \item{\code{device}}{"cairo" (default) or "pdf".}
+      \item{\code{size_include_legend}}{If \code{TRUE} (and sizing automatically), enlarge the
+figure so the plot's legend fits too. Default \code{FALSE}.}
+      \item{\code{bg}}{Background colour of the device; defaults to "transparent".}
+      \item{\code{...}}{Passed to the graphics device.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    The file path, invisibly.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-drop_legends"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-drop_legends}{}}}
+\subsection{\code{HaplotypeRainbow$drop_legends()}}{
+  Return a copy of a plot with all legends removed. Combine with
+\code{save_legend_pdf()} to export the plot and its legend separately (e.g. to
+place the legend elsewhere in a figure).
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$drop_legends(p)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{p}}{A ggplot.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A \link[ggplot2:ggplot]{ggplot2::ggplot} object with \code{legend.position = "none"}.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-extract_legend"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-extract_legend}{}}}
+\subsection{\code{HaplotypeRainbow$extract_legend()}}{
+  Extract the legend (guide-box) of a plot as a grob, for composing
+it elsewhere (e.g. with patchwork / cowplot / grid).
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$extract_legend(p)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{p}}{A ggplot.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A grid grob (gtable).
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HaplotypeRainbow-save_legend_pdf"></a>}}
+\if{latex}{\out{\hypertarget{method-HaplotypeRainbow-save_legend_pdf}{}}}
+\subsection{\code{HaplotypeRainbow$save_legend_pdf()}}{
+  Save just the legend of a plot to PDF (so it can be combined in
+post with the plot exported via \code{save_pdf(drop_legends(p), ...)}). When
+\code{width} / \code{height} are not supplied, the legend's natural size is estimated
+so it is not clipped.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{HaplotypeRainbow$save_legend_pdf(
+  p,
+  file,
+  width = NULL,
+  height = NULL,
+  margin = 0.2,
+  device = c("cairo", "pdf"),
+  bg = "transparent",
+  ...
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{p}}{A ggplot.}
+      \item{\code{file}}{Output file path.}
+      \item{\code{width}}{Width in inches (default: estimated from the legend).}
+      \item{\code{height}}{Height in inches (default: estimated from the legend).}
+      \item{\code{margin}}{Inches of padding added around the estimated size.}
+      \item{\code{device}}{"cairo" (default) or "pdf".}
+      \item{\code{bg}}{Background colour of the device; defaults to "transparent".}
+      \item{\code{...}}{Passed to the graphics device.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    The file path, invisibly.
   }
 }
 
