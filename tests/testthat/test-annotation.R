@@ -107,6 +107,34 @@ test_that("plot_gap and legend column control are accepted", {
   )
 })
 
+test_that("level_order controls legend/level order", {
+  df <- data.frame(x = c("b", "a", "c", "a"))
+  al <- HaplotypeRainbows:::.apply_level_order(df, "x", list(x = c("c", "a")))
+  expect_identical(levels(al$x), c("c", "a", "b"))
+  # unchanged column when no order supplied -> sorted
+  al2 <- HaplotypeRainbows:::.apply_level_order(df, "x", NULL)
+  expect_identical(levels(al2$x), c("a", "b", "c"))
+
+  rb <- prepped_rb()
+  p <- suppressWarnings(rb$plot())
+  expect_s3_class(
+    suppressWarnings(rb$add_sample_metadata(
+      p, cols = "country", level_order = list(country = c("Uganda", "Kenya"))
+    )),
+    "ggplot"
+  )
+})
+
+test_that("expanded rank palette makes adjacent colours distinct", {
+  ramp <- HaplotypeRainbows:::.expand_rank_palette(colorPalette_12, 16)
+  smooth <- grDevices::colorRampPalette(colorPalette_12)(16)
+  adj_min <- function(cols) {
+    rgb <- t(grDevices::col2rgb(cols))
+    min(sqrt(rowSums((rgb[-1, ] - rgb[-nrow(rgb), ])^2)))
+  }
+  expect_gt(adj_min(ramp), adj_min(smooth))
+})
+
 test_that(".per_col resolves NULL/scalar/named/positional", {
   expect_equal(HaplotypeRainbows:::.per_col(NULL, c("a", "b")),
                list(a = NULL, b = NULL))
