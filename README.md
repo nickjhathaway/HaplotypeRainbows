@@ -69,7 +69,7 @@ rb <- HaplotypeRainbow$new(
 )
 
 # prep + plot
-rb$prep(sort = "population")
+rb$prep(sort = "population_rank")
 rb$plot()
 ```
 
@@ -92,7 +92,7 @@ Order samples so that similar samples (by haplotype sharing) sit next to each ot
 using hierarchical clustering (ward.D2):
 
 ```r
-rb$prep(sort = "population")$sort_by_clustering()
+rb$prep(sort = "population_rank")$sort_by_clustering()
 rb$plot()
 ```
 
@@ -116,18 +116,31 @@ rb$plot(colors = c("#F50300","#FF6E00","#FFEB01","#00CA1E","#0241FE","#FE00D4"))
 
 ![example](images/sorted_default_example_customColors.png)
 
-## Prep modes
+## Haplotype ordering
 
-`prep(sort = ...)` controls how haplotypes are ordered and coloured:
+`prep(sort = ...)` controls how haplotypes are ordered within each cell:
 
-- `"population"` — order haplotypes by population rank (default)
-- `"frac"` — order haplotypes by within-sample fraction
-- `"shade"` — colour by shading a per-target base colour instead of a rainbow
-  (`plot()` automatically uses the shade colours)
+- `"population_rank"` — order haplotypes by population rank (default)
+- `"within_sample_freq"` — order haplotypes by within-sample fraction
+
+## Shade plots
+
+Instead of a rotating rainbow, `prep_shade()` colours each target with shades of a
+per-target base colour. `plot()` automatically uses the shade colours:
 
 ```r
-rb$prep(sort = "shade", min_pop_size = 1)
+rb$prep_shade(min_pop_size = 1)
 rb$plot()
+```
+
+## Axis labels
+
+Target names (x) and sample names (y) are shown by default; toggle either off (the plot
+keeps tight margins with no leftover ticks):
+
+```r
+rb$plot(x_axis_labels = FALSE)                        # hide target names
+rb$plot(x_axis_labels = FALSE, y_axis_labels = FALSE) # hide both (e.g. many samples)
 ```
 
 # Notes

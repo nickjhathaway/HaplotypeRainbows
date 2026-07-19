@@ -47,27 +47,42 @@ HaplotypeRainbow <- R6::R6Class(
       invisible(self)
     },
 
-    #' @description Prep the data for plotting. Stores the prepped table internally.
-    #' @param sort One of "population" (haplotypes ordered by population rank),
-    #'   "frac" (ordered by within-sample fraction) or "shade" (colour by shading a
-    #'   per-target base colour instead of a rainbow).
+    #' @description Prep the data for a rainbow plot (haplotype colours rotate across
+    #'   targets). Stores the prepped table internally.
+    #' @param sort Haplotype ordering within each cell: "population_rank" (order by
+    #'   population rank) or "within_sample_freq" (order by within-sample fraction).
     #' @param min_pop_size Drop targets with fewer than this many unique haplotypes.
-    #' @param color_period Number of hue steps to rotate across targets (rainbow modes).
+    #' @param color_period Number of hue steps to rotate across targets.
     #' @param bar_height Height of the full stacked bar per sample; < 1 leaves a gap.
-    #' @param base_colors Base colours to shade from (shade mode only).
     #' @return The object, invisibly (chainable).
-    prep = function(sort = c("population", "frac", "shade"),
-                    min_pop_size = 1, color_period = 11, bar_height = 0.80,
-                    base_colors = c("#e41a1c", "#377eb8", "#4daf4a",
-                                    "#984ea3", "#ff7f00", "#ffff33")) {
+    prep = function(sort = c("population_rank", "within_sample_freq"),
+                    min_pop_size = 1, color_period = 11, bar_height = 0.80) {
       sort <- match.arg(sort)
       private$prepped <- .prep_engine(
         private$data, private$cols, sort = sort,
         min_pop_size = min_pop_size, color_period = color_period,
-        bar_height = bar_height, base_colors = base_colors
+        bar_height = bar_height
       )
       private$sort_mode <- sort
       private$color_period <- color_period
+      invisible(self)
+    },
+
+    #' @description Prep the data for a shade plot (haplotypes shaded from a per-target
+    #'   base colour instead of a rotating rainbow). Stores the prepped table internally.
+    #' @param min_pop_size Drop targets with fewer than this many unique haplotypes.
+    #' @param bar_height Height of the full stacked bar per sample; < 1 leaves a gap.
+    #' @param base_colors Base colours to generate the per-target shades from.
+    #' @return The object, invisibly (chainable).
+    prep_shade = function(min_pop_size = 1, bar_height = 0.80,
+                          base_colors = c("#e41a1c", "#377eb8", "#4daf4a",
+                                          "#984ea3", "#ff7f00", "#ffff33")) {
+      private$prepped <- .prep_engine(
+        private$data, private$cols, sort = "shade",
+        min_pop_size = min_pop_size, bar_height = bar_height,
+        base_colors = base_colors
+      )
+      private$sort_mode <- "shade"
       invisible(self)
     },
 
@@ -118,27 +133,27 @@ HaplotypeRainbow <- R6::R6Class(
     #' @param color_col Column to map to fill for rainbow style
     #'   ("popidFracLogColor" or "popidFracRegColor").
     #' @param shade_col Identity-colour column for shade style.
-    #' @param axis_labels Add target names on the x-axis and sample names on the y-axis.
+    #' @param x_axis_labels Show target names on the x-axis.
+    #' @param y_axis_labels Show sample names on the y-axis.
     #' @return A [ggplot2::ggplot] object.
     plot = function(style = NULL,
                     colors = RColorBrewer::brewer.pal(11, "Spectral"),
                     color_col = "popidFracLogColor",
                     shade_col = "h_color_byFreq_mod",
-                    axis_labels = TRUE) {
+                    x_axis_labels = TRUE, y_axis_labels = TRUE) {
       private$require_prepped()
       if (is.null(style)) {
         style <- if (identical(private$sort_mode, "shade")) "shade" else "rainbow"
       }
       style <- match.arg(style, c("rainbow", "shade"))
       if (style == "rainbow" && identical(private$sort_mode, "shade")) {
-        stop("style = 'rainbow' needs data prepped with sort = 'population' or 'frac'.",
-             call. = FALSE)
+        stop("style = 'rainbow' needs data prepped with $prep().", call. = FALSE)
       }
       if (style == "shade" && !identical(private$sort_mode, "shade")) {
-        stop("style = 'shade' needs data prepped with sort = 'shade'.", call. = FALSE)
+        stop("style = 'shade' needs data prepped with $prep_shade().", call. = FALSE)
       }
       fill_col <- if (style == "rainbow") color_col else shade_col
-      private$build_plot(style, fill_col, colors, axis_labels)
+      private$build_plot(style, fill_col, colors, x_axis_labels, y_axis_labels)
     },
 
     #' @description Return the prepped data frame (or `NULL` if `prep()` not yet called).
@@ -232,14 +247,12 @@ HaplotypeRainbow <- R6::R6Class(
         dplyr::mutate("{cols$sample}" := factor(!!s_sym, levels = sample_levels))
     },
 
-    build_plot = function(style, fill_col, colors, axis_labels) {
+    build_plot = function(style, fill_col, colors, x_axis_labels, y_axis_labels) {
       prep_data <- private$prepped
       sc <- private$cols$sample
       tc <- private$cols$target
       hc <- private$cols$popuid
       ac <- private$cols$rel_abund
-
-      y_axis <- .sample_axis(prep_data, sc)
 
       # extra (non-standard) aesthetics carried through so ggplotly() can surface
       # them in hover text. Dynamic aesthetic names require !!! splicing in aes().
@@ -268,28 +281,39 @@ HaplotypeRainbow <- R6::R6Class(
         ggplot2::scale_fill_identity()
       }
 
-      if (axis_labels) {
-        target_levels <- levels(dplyr::pull(prep_data, dplyr::all_of(tc)))
-        sample_levels <- levels(dplyr::pull(prep_data, dplyr::all_of(sc)))
+      target_levels <- levels(dplyr::pull(prep_data, dplyr::all_of(tc)))
+      sample_levels <- levels(dplyr::pull(prep_data, dplyr::all_of(sc)))
+
+      # x-axis: always expand = 0 (tight margins); drop ticks/labels when off.
+      if (x_axis_labels) {
         p <- p +
           ggplot2::scale_x_continuous(
             labels = target_levels,
             breaks = seq_along(target_levels),
             expand = c(0, 0)
           ) +
+          ggplot2::theme(axis.text.x = ggplot2::element_text(
+            family = "mono", angle = -90, hjust = 0
+          ))
+      } else {
+        p <- p +
+          ggplot2::scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
+          ggplot2::theme(axis.title.x = ggplot2::element_blank())
+      }
+
+      # y-axis: same treatment.
+      if (y_axis_labels) {
+        p <- p +
           ggplot2::scale_y_continuous(
             labels = sample_levels,
             breaks = seq_along(sample_levels),
             expand = c(0, 0)
           ) +
-          ggplot2::theme(
-            axis.text.y = ggplot2::element_text(family = "mono"),
-            axis.text.x = ggplot2::element_text(family = "mono", angle = -90, hjust = 0)
-          )
+          ggplot2::theme(axis.text.y = ggplot2::element_text(family = "mono"))
       } else {
         p <- p +
-          ggplot2::scale_y_continuous(breaks = y_axis$breaks, labels = y_axis$labels) +
-          ggplot2::theme(axis.text.x = ggplot2::element_blank())
+          ggplot2::scale_y_continuous(breaks = NULL, expand = c(0, 0)) +
+          ggplot2::theme(axis.title.y = ggplot2::element_blank())
       }
       p
     }
